@@ -4,11 +4,11 @@ package com.baranau.sergey.scarlett_w.Entity;
  * Created by sergey on 1/30/16.
  */
 public class UserEntity {
-    private long id;
-    private String name = "";
-    private int age = 0;
+    private long id = -1;
+    private String name = "User";
+    private int age = 18;
     private int regDate = 0;
-    private int height = 0;
+    private int height = 170;
     private int gender = 0; // 0- female, 1 - man
 
     public int getRegDate() {

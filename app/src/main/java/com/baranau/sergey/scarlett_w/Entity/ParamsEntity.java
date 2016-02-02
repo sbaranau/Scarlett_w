@@ -5,7 +5,7 @@ package com.baranau.sergey.scarlett_w.Entity;
  */
 public class ParamsEntity {
     private long userId;
-    private Integer date;
+    private int date = 0;
     private float weight;
     private float fat;
     private float tdw;
@@ -22,11 +22,11 @@ public class ParamsEntity {
         this.userId = userId;
     }
 
-    public Integer getDate() {
+    public int getDate() {
         return date;
     }
 
-    public void setDate(Integer date) {
+    public void setDate(int date) {
         this.date = date;
     }
 

@@ -58,10 +58,25 @@
         android:text="Height"
         android:id="@+id/textView12" />
 
-    <EditText
+    <LinearLayout
+        android:orientation="horizontal"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/user_height"
-        android:text="50" />
+        android:layout_height="match_parent">
+
+        <EditText
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/user_height"
+            android:text="50"
+            android:layout_weight="1" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            android:text="cm"
+            android:id="@+id/textView13"
+            android:layout_weight="1" />
+    </LinearLayout>
 
 </LinearLayout>

@@ -24,27 +24,28 @@ import java.util.Locale;
 
 public class DataBaseHelper extends SQLiteOpenHelper {
 
-    public static final int BASE_VERSION = 1;
+    private static final int BASE_VERSION = 4;
 
-    public static final String DATABASE_NAME = "scarlet_2216.db";
-    public static final String USER_TABLE_NAME = "user";
-    public static final String USER_COLUMN_ID = "id";
-    public static final String USER_COLUMN_NAME = "name";
-    public static final String USER_COLUMN_AGE = "age";
-    public static final String USER_COLUMN_GENDER = "gender";
-    public static final String USER_COLUMN_HEIGHT = "height";
-    public static final String USER_COLUMN_REG_DATE = "reg_date";
+    private static final String DATABASE_NAME = "scarlet_2216.db";
+    private static final String USER_TABLE_NAME = "user";
+    private static final String USER_COLUMN_ID = "id";
+    private static final String USER_COLUMN_NAME = "name";
+    private static final String USER_COLUMN_AGE = "age";
+    private static final String USER_COLUMN_GENDER = "gender";
+    private static final String USER_COLUMN_HEIGHT = "height";
+    private static final String USER_COLUMN_REG_DATE = "reg_date";
 
-    public static final String PARAMS_TABLE_NAME = "params";
-    public static final String PARAMS_COLUMN_USEID = "iserid";
-    public static final String PARAMS_COLUMN_DATE = "date";
-    public static final String PARAMS_COLUMN_WEIGHT = "weight";
-    public static final String PARAMS_COLUMN_FAT = "fat";
-    public static final String PARAMS_COLUMN_TDW = "tdw";
-    public static final String PARAMS_COLUMN_MISHCY = "mishcy";
-    public static final String PARAMS_COLUMN_BONES = "bones";
-    public static final String PARAMS_COLUMN_KCAL = "kcal";
-    public static final String PARAMS_COLUMN_BMI = "bmi";
+    private static final String PARAMS_TABLE_NAME = "params";
+    private static final String PARAMS_COLUMN_ID = "id";
+    private static final String PARAMS_COLUMN_USEID = "iserid";
+    private static final String PARAMS_COLUMN_DATE = "date";
+    private static final String PARAMS_COLUMN_WEIGHT = "weight";
+    private static final String PARAMS_COLUMN_FAT = "fat";
+    private static final String PARAMS_COLUMN_TDW = "tdw";
+    private static final String PARAMS_COLUMN_MISHCY = "mishcy";
+    private static final String PARAMS_COLUMN_BONES = "bones";
+    private static final String PARAMS_COLUMN_KCAL = "kcal";
+    private static final String PARAMS_COLUMN_BMI = "bmi";
 
 
 
@@ -52,9 +53,12 @@ public class DataBaseHelper extends SQLiteOpenHelper {
     private List<UserEntity> tempUserList = new ArrayList<>();
     private List<ParamsEntity> tempParamsList = new ArrayList<>();
     private static DataBaseHelper dataBaseHelper = null;
+    private static SimpleDateFormat formatterForInt = new SimpleDateFormat("yyyyMMdd", Locale.getDefault());
+    private static int todaySql = 0;
 
     private DataBaseHelper(Context context) {
         super(context, DATABASE_NAME, null, BASE_VERSION);
+        todaySql = Integer.parseInt(formatterForInt.format(new Date()));
     }
 
     public static DataBaseHelper getDataBaseHelper(Context context) {
@@ -79,7 +83,8 @@ public class DataBaseHelper extends SQLiteOpenHelper {
             );
             db.execSQL(
                     "create table " + PARAMS_TABLE_NAME +
-                            "(" + PARAMS_COLUMN_USEID + " integer primary key, "
+                            "(" + PARAMS_COLUMN_ID + " integer primary key, "
+                            + PARAMS_COLUMN_USEID + " integer, "
                             + PARAMS_COLUMN_DATE + " integer, "
                             + PARAMS_COLUMN_WEIGHT + " real, "
                             + PARAMS_COLUMN_BMI + " real, "
@@ -87,7 +92,6 @@ public class DataBaseHelper extends SQLiteOpenHelper {
                             + PARAMS_COLUMN_FAT + " real, "
                             + PARAMS_COLUMN_KCAL + " real, "
                             + PARAMS_COLUMN_MISHCY + " real, "
-                            + PARAMS_COLUMN_BMI + " real, "
                             + PARAMS_COLUMN_TDW + " real) "
             );
         } catch (Exception ex) {
@@ -194,7 +198,7 @@ public class DataBaseHelper extends SQLiteOpenHelper {
         }
     }
 
-    public HashMap<Integer, String> getUser() {
+    public HashMap<Integer, String> getUsersNames() {
         HashMap<Integer, String> user = new HashMap<>();
         try {
             SQLiteDatabase db = this.getReadableDatabase();
@@ -213,13 +217,12 @@ public class DataBaseHelper extends SQLiteOpenHelper {
         return user;
     }
 
-    public long addUser(com.baranau.sergey.scarlett_w.Entity.UserEntity user) {
+    public long addUser(UserEntity user) {
         try {
             SQLiteDatabase db = this.getReadableDatabase();
             ContentValues contentValues = new ContentValues();
-            SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd", Locale.getDefault());
             try {
-                contentValues.put(USER_COLUMN_AGE, Integer.parseInt(formatter.format(new Date())));
+                contentValues.put(USER_COLUMN_REG_DATE, todaySql);
             } catch (Exception ex) {
                 contentValues.put(USER_COLUMN_AGE, 0);
             }
@@ -242,7 +245,7 @@ public class DataBaseHelper extends SQLiteOpenHelper {
             if (cursor.getCount() > 0) {
                 cursor.moveToFirst();
                 while (!cursor.isAfterLast()) {
-                    user.setId(cursor.getLong(cursor.getColumnIndex(USER_COLUMN_ID)));
+                    user.setId(id);
                     user.setName(cursor.getString(cursor.getColumnIndex(USER_COLUMN_NAME)));
                     user.setAge(cursor.getInt(cursor.getColumnIndex(USER_COLUMN_AGE)));
                     user.setGender(cursor.getInt(cursor.getColumnIndex(USER_COLUMN_GENDER)));
@@ -255,6 +258,27 @@ public class DataBaseHelper extends SQLiteOpenHelper {
             ex.printStackTrace();
         }
         return user;
+    }
+
+    public boolean updateUser(UserEntity user) {
+        try {
+            SQLiteDatabase db = this.getReadableDatabase();
+            ContentValues contentValues = new ContentValues();
+            SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd", Locale.getDefault());
+            try {
+                contentValues.put(USER_COLUMN_REG_DATE, Integer.parseInt(formatter.format(new Date())));
+            } catch (Exception ex) {
+                contentValues.put(USER_COLUMN_AGE, 0);
+            }
+            contentValues.put(USER_COLUMN_AGE, user.getAge());
+            contentValues.put(USER_COLUMN_HEIGHT, user.getHeight());
+            contentValues.put(USER_COLUMN_GENDER, user.getGender());
+            contentValues.put(USER_COLUMN_NAME, user.getName());
+            return db.update(USER_TABLE_NAME, contentValues, USER_COLUMN_ID + " = ? ", new String[]{String.valueOf(user.getId())}) == 1;
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        return  false;
     }
 
     public ParamsEntity getLastParams(long id) {
@@ -295,20 +319,60 @@ public class DataBaseHelper extends SQLiteOpenHelper {
         return paramsEntity;
     }
 
+    public ParamsEntity getPreviousParams(long id, int date) {
+        ParamsEntity paramsEntity = new ParamsEntity();
+        try {
+            SQLiteDatabase db = this.getReadableDatabase();
+            Cursor params = db.rawQuery("select * from " + PARAMS_TABLE_NAME + " where "
+                    + PARAMS_COLUMN_USEID + " = " + id + " order by " + PARAMS_COLUMN_DATE
+                    + " DESC", null);
+            if (params.getCount() > 0) {
+                params.moveToFirst();
+                if (!params.isAfterLast()) {
+                    paramsEntity.setUserId(params.getLong(params.getColumnIndex(PARAMS_COLUMN_USEID)));
+                    paramsEntity.setBmi(params.getFloat(params.getColumnIndex(PARAMS_COLUMN_BMI)));
+                    paramsEntity.setBones(params.getFloat(params.getColumnIndex(PARAMS_COLUMN_BONES)));
+                    paramsEntity.setDate(params.getInt(params.getColumnIndex(PARAMS_COLUMN_DATE)));
+                    paramsEntity.setFat(params.getFloat(params.getColumnIndex(PARAMS_COLUMN_FAT)));
+                    paramsEntity.setKcal(params.getFloat(params.getColumnIndex(PARAMS_COLUMN_KCAL)));
+                    paramsEntity.setMuscle(params.getFloat(params.getColumnIndex(PARAMS_COLUMN_MISHCY)));
+                    paramsEntity.setTdw(params.getFloat(params.getColumnIndex(PARAMS_COLUMN_TDW)));
+                    paramsEntity.setWeight(params.getFloat(params.getColumnIndex(PARAMS_COLUMN_WEIGHT)));
+                }
+                params.close();
+            } else {
+                paramsEntity.setUserId(id);
+                paramsEntity.setBmi(0);
+                paramsEntity.setBones(0);
+                paramsEntity.setDate(0);
+                paramsEntity.setFat(0);
+                paramsEntity.setKcal(0);
+                paramsEntity.setMuscle(0);
+                paramsEntity.setTdw(0);
+                paramsEntity.setWeight(0);
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        return paramsEntity;
+    }
+
+
     public boolean addParams(ParamsEntity paramsEntity) {
         try {
             SQLiteDatabase db = this.getReadableDatabase();
             ContentValues contentValues = new ContentValues();
             contentValues.put(PARAMS_COLUMN_BMI, paramsEntity.getBmi());
             contentValues.put(PARAMS_COLUMN_BONES, paramsEntity.getBones());
-            contentValues.put(PARAMS_COLUMN_DATE, paramsEntity.getDate());
+            contentValues.put(PARAMS_COLUMN_DATE, todaySql);
             contentValues.put(PARAMS_COLUMN_FAT, paramsEntity.getFat());
             contentValues.put(PARAMS_COLUMN_KCAL, paramsEntity.getKcal());
             contentValues.put(PARAMS_COLUMN_MISHCY, paramsEntity.getMuscle());
             contentValues.put(PARAMS_COLUMN_USEID, paramsEntity.getUserId());
             contentValues.put(PARAMS_COLUMN_WEIGHT, paramsEntity.getWeight());
             contentValues.put(PARAMS_COLUMN_TDW, paramsEntity.getTdw());
-            return db.insert(PARAMS_TABLE_NAME, null, contentValues) > 0;
+            long id = db.insert(PARAMS_TABLE_NAME, null, contentValues);
+            return  id > 0;
         } catch (Exception ex) {
             Log.e("Insert Params", "", ex);
             return false;
