@@ -4,15 +4,15 @@ package com.baranau.sergey.scarlett_w.Entity;
  * Created by sergey on 1/30/16.
  */
 public class ParamsEntity {
-    private long userId;
+    private long userId = 0;
     private int date = 0;
-    private float weight;
-    private float fat;
-    private float tdw;
-    private float muscle;
-    private float bones;
-    private float kcal;
-    private float bmi;
+    private float weight = 0;
+    private float fat = 0;
+    private float tdw = 0;
+    private float muscle = 0;
+    private float bones = 0;
+    private float kcal = 0;
+    private float bmi = 0;
 
     public long getUserId() {
         return userId;

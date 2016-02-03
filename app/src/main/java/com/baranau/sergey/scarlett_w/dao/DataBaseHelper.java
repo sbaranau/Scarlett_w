@@ -16,6 +16,7 @@ import com.baranau.sergey.scarlett_w.Entity.UserEntity;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -24,7 +25,7 @@ import java.util.Locale;
 
 public class DataBaseHelper extends SQLiteOpenHelper {
 
-    private static final int BASE_VERSION = 4;
+    private static final int BASE_VERSION = 5;
 
     private static final String DATABASE_NAME = "scarlet_2216.db";
     private static final String USER_TABLE_NAME = "user";
@@ -53,12 +54,12 @@ public class DataBaseHelper extends SQLiteOpenHelper {
     private List<UserEntity> tempUserList = new ArrayList<>();
     private List<ParamsEntity> tempParamsList = new ArrayList<>();
     private static DataBaseHelper dataBaseHelper = null;
-    private static SimpleDateFormat formatterForInt = new SimpleDateFormat("yyyyMMdd", Locale.getDefault());
+    private static SimpleDateFormat formatterForSql = new SimpleDateFormat("yyyyMMdd", Locale.getDefault());
     private static int todaySql = 0;
 
     private DataBaseHelper(Context context) {
         super(context, DATABASE_NAME, null, BASE_VERSION);
-        todaySql = Integer.parseInt(formatterForInt.format(new Date()));
+        todaySql = Integer.parseInt(formatterForSql.format(new Date()));
     }
 
     public static DataBaseHelper getDataBaseHelper(Context context) {
@@ -146,6 +147,57 @@ public class DataBaseHelper extends SQLiteOpenHelper {
         }
         return false;
     }
+    public boolean deleteAllParams() {
+        try {
+            SQLiteDatabase db = this.getReadableDatabase();
+            return db.delete(PARAMS_TABLE_NAME, null, null) > 0;
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean deleteAll() {
+        return deleteAllUsers() && deleteAllParams();
+    }
+
+    public boolean addTestParams(long userId) {
+        try {
+            SQLiteDatabase db = this.getReadableDatabase();
+            Calendar cal = Calendar.getInstance();
+            Date date;
+            for (int i = 1; i <= 5; i++) {
+                cal.add(Calendar.DAY_OF_YEAR, -i);
+                date = cal.getTime();
+                int dateVal = Integer.parseInt(formatterForSql.format(date));
+                ParamsEntity temp = getParamsByDate(userId, dateVal);
+
+                ContentValues contentValues = new ContentValues();
+                contentValues.put(PARAMS_COLUMN_BMI, 7 - i * (((dateVal%2) == 0)?(-1):1));
+                contentValues.put(PARAMS_COLUMN_BONES, 30 - i * (((dateVal%2) == 1)?(-1):1));
+                contentValues.put(PARAMS_COLUMN_DATE, dateVal);
+                contentValues.put(PARAMS_COLUMN_FAT, 15  - i * (((dateVal%2) == 0)?(-1):1));
+                contentValues.put(PARAMS_COLUMN_KCAL, 1550 - i * (((dateVal%2) == 0)?(-1):1));
+                contentValues.put(PARAMS_COLUMN_MISHCY, 48 - i * (((dateVal%2) == 0)?(-1):1));
+                contentValues.put(PARAMS_COLUMN_USEID, userId);
+                contentValues.put(PARAMS_COLUMN_WEIGHT, 73  - i * (((dateVal%2) == 0)?(-1):1));
+                contentValues.put(PARAMS_COLUMN_TDW, 5 - i * (((dateVal%2) == 0)?(-1):1));
+                if (temp.getDate() > 0) {
+                    db.update(PARAMS_TABLE_NAME, contentValues,
+                            PARAMS_COLUMN_USEID + " = ? AND " + PARAMS_COLUMN_DATE + " = ?",
+                            new String[]{String.valueOf(temp.getUserId()), String.valueOf(temp.getDate())});
+
+                } else {
+                    db.insert(PARAMS_TABLE_NAME, null, contentValues);
+                }
+            }
+
+            return  true;
+        } catch (Exception ex) {
+            Log.e("Insert Params", "", ex);
+            return false;
+        }
+    }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
@@ -202,7 +254,7 @@ public class DataBaseHelper extends SQLiteOpenHelper {
         HashMap<Integer, String> user = new HashMap<>();
         try {
             SQLiteDatabase db = this.getReadableDatabase();
-            Cursor c = db.rawQuery("select " + USER_COLUMN_ID + "," + USER_COLUMN_NAME + " from " + USER_TABLE_NAME, null );
+            Cursor c = db.rawQuery("select " + USER_COLUMN_ID + "," + USER_COLUMN_NAME + " from " + USER_TABLE_NAME, null);
             if (c.getCount() > 0) {
                 c.moveToFirst();
                 while (!c.isAfterLast()) {
@@ -281,12 +333,20 @@ public class DataBaseHelper extends SQLiteOpenHelper {
         return  false;
     }
 
+    public boolean updateParametersOnDate(ParamsEntity paramsEntity, long userId, int date) {
+
+        return true;
+    }
+/*
+      return previous parameters(ignore today)
+ */
     public ParamsEntity getLastParams(long id) {
         ParamsEntity paramsEntity = new ParamsEntity();
         try {
             SQLiteDatabase db = this.getReadableDatabase();
             Cursor params = db.rawQuery("select * from " + PARAMS_TABLE_NAME + " where "
-                    + PARAMS_COLUMN_USEID + " = " + id + " order by " + PARAMS_COLUMN_DATE
+                    + PARAMS_COLUMN_USEID + " = " + id + " and " + PARAMS_COLUMN_DATE + "<" + todaySql
+                    + " order by " + PARAMS_COLUMN_DATE
                     + " DESC", null);
             if (params.getCount() > 0) {
                 params.moveToFirst();
@@ -302,16 +362,6 @@ public class DataBaseHelper extends SQLiteOpenHelper {
                     paramsEntity.setWeight(params.getFloat(params.getColumnIndex(PARAMS_COLUMN_WEIGHT)));
                 }
                 params.close();
-            } else {
-                paramsEntity.setUserId(id);
-                paramsEntity.setBmi(0);
-                paramsEntity.setBones(0);
-                paramsEntity.setDate(0);
-                paramsEntity.setFat(0);
-                paramsEntity.setKcal(0);
-                paramsEntity.setMuscle(0);
-                paramsEntity.setTdw(0);
-                paramsEntity.setWeight(0);
             }
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -319,13 +369,13 @@ public class DataBaseHelper extends SQLiteOpenHelper {
         return paramsEntity;
     }
 
-    public ParamsEntity getPreviousParams(long id, int date) {
+    public ParamsEntity getParamsByDate(long id, int date) {
         ParamsEntity paramsEntity = new ParamsEntity();
         try {
             SQLiteDatabase db = this.getReadableDatabase();
             Cursor params = db.rawQuery("select * from " + PARAMS_TABLE_NAME + " where "
-                    + PARAMS_COLUMN_USEID + " = " + id + " order by " + PARAMS_COLUMN_DATE
-                    + " DESC", null);
+                    + PARAMS_COLUMN_USEID + " = " + id + " and "+ PARAMS_COLUMN_DATE + "="
+                    + date + " order by " + PARAMS_COLUMN_DATE + " DESC", null);
             if (params.getCount() > 0) {
                 params.moveToFirst();
                 if (!params.isAfterLast()) {
@@ -340,16 +390,6 @@ public class DataBaseHelper extends SQLiteOpenHelper {
                     paramsEntity.setWeight(params.getFloat(params.getColumnIndex(PARAMS_COLUMN_WEIGHT)));
                 }
                 params.close();
-            } else {
-                paramsEntity.setUserId(id);
-                paramsEntity.setBmi(0);
-                paramsEntity.setBones(0);
-                paramsEntity.setDate(0);
-                paramsEntity.setFat(0);
-                paramsEntity.setKcal(0);
-                paramsEntity.setMuscle(0);
-                paramsEntity.setTdw(0);
-                paramsEntity.setWeight(0);
             }
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -359,8 +399,10 @@ public class DataBaseHelper extends SQLiteOpenHelper {
 
 
     public boolean addParams(ParamsEntity paramsEntity) {
+        boolean result = true;
         try {
             SQLiteDatabase db = this.getReadableDatabase();
+            ParamsEntity temp = getParamsByDate(paramsEntity.getUserId(), paramsEntity.getDate());
             ContentValues contentValues = new ContentValues();
             contentValues.put(PARAMS_COLUMN_BMI, paramsEntity.getBmi());
             contentValues.put(PARAMS_COLUMN_BONES, paramsEntity.getBones());
@@ -371,12 +413,20 @@ public class DataBaseHelper extends SQLiteOpenHelper {
             contentValues.put(PARAMS_COLUMN_USEID, paramsEntity.getUserId());
             contentValues.put(PARAMS_COLUMN_WEIGHT, paramsEntity.getWeight());
             contentValues.put(PARAMS_COLUMN_TDW, paramsEntity.getTdw());
-            long id = db.insert(PARAMS_TABLE_NAME, null, contentValues);
-            return  id > 0;
+
+            if (temp.getDate() > 0) {
+                contentValues.put(PARAMS_COLUMN_DATE, temp.getDate());
+                int wresult = db.update(PARAMS_TABLE_NAME, contentValues,
+                        PARAMS_COLUMN_USEID + " = ? AND " + PARAMS_COLUMN_DATE + " = ?",
+                        new String[]{String.valueOf(temp.getUserId()), String.valueOf(temp.getDate())});
+            } else {
+                result = db.insert(PARAMS_TABLE_NAME, null, contentValues) == 1;
+            }
         } catch (Exception ex) {
             Log.e("Insert Params", "", ex);
             return false;
         }
+        return result;
     }
 
 /*

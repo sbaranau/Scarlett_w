@@ -21,8 +21,10 @@ import android.widget.RadioButton;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import com.baranau.sergey.scarlett_w.Entity.Emotions;
 import com.baranau.sergey.scarlett_w.Entity.ParamsEntity;
 import com.baranau.sergey.scarlett_w.Entity.UserEntity;
+import com.baranau.sergey.scarlett_w.Global.GlobalFunc;
 import com.baranau.sergey.scarlett_w.Global.GlobalVars;
 import com.baranau.sergey.scarlett_w.dao.DataBaseHelper;
 
@@ -35,7 +37,9 @@ public class Welcome extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
     HashMap<Integer, String> user;
     DataBaseHelper dataBaseHelper;
-    ParamsEntity lastParamsEntity = new ParamsEntity();
+    ParamsEntity previousParamsEntity = new ParamsEntity();
+    ParamsEntity todayParamsEntity = new ParamsEntity();
+    ParamsEntity deltaParamsEntity = new ParamsEntity();
     SimpleDateFormat formatterForInt = new SimpleDateFormat("yyyyMMdd", Locale.getDefault());
     int todaySql = 0;
 
@@ -52,7 +56,7 @@ public class Welcome extends AppCompatActivity
         setSupportActionBar(toolbar);
         dataBaseHelper = DataBaseHelper.getDataBaseHelper(Welcome.this);
 
-      //  dataBaseHelper.deleteAllUsers();
+        dataBaseHelper.deleteAllParams();
 
 
         user = dataBaseHelper.getUsersNames();
@@ -106,6 +110,7 @@ public class Welcome extends AppCompatActivity
             GlobalVars.getInstance().setName(user.get(key));
             builder.setPositiveButton("Yes, It's me", new DialogInterface.OnClickListener() {
                 public void onClick(DialogInterface dialog, int id) {
+                    dataBaseHelper.addTestParams(GlobalVars.getInstance().getId());
                     dialog.cancel();
                     updateTitleInfo();
                     updateParameters();
@@ -126,10 +131,10 @@ public class Welcome extends AppCompatActivity
             public void onClick(View view) {
                 /*Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();*/http://baraholka.onliner.by/viewtopic.php?t=16950848
-                if (lastParamsEntity == null || lastParamsEntity.getDate() == 0) {
-                    lastParamsEntity = dataBaseHelper.getLastParams(GlobalVars.getInstance().getId());
+                if (todayParamsEntity == null || todayParamsEntity.getDate() == 0) {
+                    todayParamsEntity = dataBaseHelper.getLastParams(GlobalVars.getInstance().getId());
                 }
-                if (lastParamsEntity.getDate() == todaySql) {
+                if (todayParamsEntity.getDate() == todaySql) {
                     AlertDialog.Builder builder = new AlertDialog.Builder(Welcome.this);
                     builder.setTitle("Attention!!!");
                     builder.setMessage("You have record for today. Do You want override it?");
@@ -143,11 +148,12 @@ public class Welcome extends AppCompatActivity
                     builder.setPositiveButton("Yes, I want", new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
-                            showParametersDialog();
+                            showParametersDialog(todayParamsEntity);
                         }
                     });
+                    builder.create().show();
                 } else {
-                    showParametersDialog();
+                    showParametersDialog(null);
                 }
 
 
@@ -219,7 +225,7 @@ public class Welcome extends AppCompatActivity
         return true;
     }
 
-    private boolean showParametersDialog() {
+    private boolean showParametersDialog(ParamsEntity paramsEntity) {
 
         final LayoutInflater inflater = (Welcome.this).getLayoutInflater();
         View promptsView = inflater.inflate(R.layout.enter_params_dialog, null);
@@ -232,6 +238,18 @@ public class Welcome extends AppCompatActivity
         final EditText bones = (EditText) promptsView.findViewById(R.id.bones);
         final EditText kcal = (EditText) promptsView.findViewById(R.id.kcal);
         final EditText bmi = (EditText) promptsView.findViewById(R.id.bmi);
+        if (paramsEntity == null || paramsEntity.getWeight() == 0) {
+            paramsEntity = new ParamsEntity();
+            paramsEntity.setDate(todaySql);
+        } else {
+            kg.setText(paramsEntity.getWeight() + "");
+            fat.setText(paramsEntity.getFat() + "");
+            tdw.setText(paramsEntity.getTdw() + "");
+            muscle.setText(paramsEntity.getMuscle() + "");
+            bones.setText(paramsEntity.getBones() + "");
+            bmi.setText(paramsEntity.getBmi() + "");
+            kcal.setText(paramsEntity.getKcal() + "");
+        }
         alertDialogBuilder
                 .setCancelable(false)
                 .setPositiveButton(R.string.ok,null)
@@ -244,111 +262,116 @@ public class Welcome extends AppCompatActivity
 
         final AlertDialog alertDialog = alertDialogBuilder.create();
         alertDialog.show();
+        final ParamsEntity finalParamsEntity = paramsEntity;
         alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 boolean isOk = true;
-                ParamsEntity paramsEntity = new ParamsEntity();
-                paramsEntity.setUserId(GlobalVars.getInstance().getId());
+
+
+                finalParamsEntity.setUserId(GlobalVars.getInstance().getId());
                 String param;
                 if ((param = kg.getText().toString()).length() > 0) {
                     try {
-                        param = param.replaceAll(",",".");
-                        paramsEntity.setWeight(Float.parseFloat(param));
-                        if (paramsEntity.getWeight() <= 0) {
-                            kg.setError(String.format("I You really %s kg?", paramsEntity.getWeight()));
+                        param = param.replaceAll(",", ".");
+                        finalParamsEntity.setWeight(Float.parseFloat(param));
+                        if (finalParamsEntity.getWeight() <= 0) {
+                            kg.setError(String.format("I You really %s kg?", finalParamsEntity.getWeight()));
                             isOk = false;
                         }
                     } catch (NumberFormatException ex) {
-                        kg.setError(String.format("I You really %s kg?", paramsEntity.getWeight()));
+                        kg.setError(String.format("I You really %s kg?", finalParamsEntity.getWeight()));
                         isOk = false;
                     }
+                } else {
+                    kg.setError(String.format("I You really %s kg?", finalParamsEntity.getWeight()));
                 }
                 if ((param = fat.getText().toString()).length() > 0) {
                     try {
-                        param = param.replaceAll(",",".");
-                        paramsEntity.setFat(Float.parseFloat(param));
+                        param = param.replaceAll(",", ".");
+                        finalParamsEntity.setFat(Float.parseFloat(param));
 
-                        if (paramsEntity.getFat() <= 0 || paramsEntity.getFat() > 100) {
-                            fat.setError(String.format("Your FAT is really %s%%?", paramsEntity.getFat()));
+                        if (finalParamsEntity.getFat() <= 0 || finalParamsEntity.getFat() > 100) {
+                            fat.setError(String.format("Your FAT is really %s%%?", finalParamsEntity.getFat()));
                             isOk = false;
                         }
                     } catch (NumberFormatException ex) {
-                        fat.setError(String.format("Your FAT is really %s%%?", paramsEntity.getFat()));
+                        fat.setError(String.format("Your FAT is really %s%%?", finalParamsEntity.getFat()));
                         isOk = false;
                     }
                 }
                 if ((param = tdw.getText().toString()).length() > 0) {
                     try {
-                        param = param.replaceAll(",",".");
-                        paramsEntity.setTdw(Float.parseFloat(param));
-                        if (paramsEntity.getTdw() <= 0 || paramsEntity.getTdw() > 100) {
-                            tdw.setError(String.format("Your TDW is really %s%%?", paramsEntity.getTdw()));
+                        param = param.replaceAll(",", ".");
+                        finalParamsEntity.setTdw(Float.parseFloat(param));
+                        if (finalParamsEntity.getTdw() <= 0 || finalParamsEntity.getTdw() > 100) {
+                            tdw.setError(String.format("Your TDW is really %s%%?", finalParamsEntity.getTdw()));
                             isOk = false;
                         }
                     } catch (NumberFormatException ex) {
-                        tdw.setError(String.format("Your TDW is really %s%%?", paramsEntity.getTdw()));
+                        tdw.setError(String.format("Your TDW is really %s%%?", finalParamsEntity.getTdw()));
                         isOk = false;
                     }
                 }
                 if ((param = muscle.getText().toString()).length() > 0) {
                     try {
-                        param = param.replaceAll(",",".");
-                        paramsEntity.setMuscle(Float.parseFloat(param));
-                        if (paramsEntity.getMuscle() <= 0 || paramsEntity.getMuscle() > 100) {
-                            muscle.setError(String.format("Your Muscles is really %s%%?", paramsEntity.getMuscle()));
+                        param = param.replaceAll(",", ".");
+                        finalParamsEntity.setMuscle(Float.parseFloat(param));
+                        if (finalParamsEntity.getMuscle() <= 0 || finalParamsEntity.getMuscle() > 100) {
+                            muscle.setError(String.format("Your Muscles is really %s%%?", finalParamsEntity.getMuscle()));
                             isOk = false;
                         }
                     } catch (NumberFormatException ex) {
-                        muscle.setError(String.format("Your Muscles is really %s%%?", paramsEntity.getMuscle()));
+                        muscle.setError(String.format("Your Muscles is really %s%%?", finalParamsEntity.getMuscle()));
                         isOk = false;
                     }
                 }
                 if ((param = bones.getText().toString()).length() > 0) {
                     try {
-                        param = param.replaceAll(",",".");
-                        paramsEntity.setBones(Float.parseFloat(param));
-                        if (paramsEntity.getBones() <= 0 || paramsEntity.getBones() >=  paramsEntity.getWeight()) {
-                            bones.setError(String.format("Your Bones is really %skg?", paramsEntity.getBones()));
+                        param = param.replaceAll(",", ".");
+                        finalParamsEntity.setBones(Float.parseFloat(param));
+                        if (finalParamsEntity.getBones() <= 0 || finalParamsEntity.getBones() >= finalParamsEntity.getWeight()) {
+                            bones.setError(String.format("Your Bones is really %skg?", finalParamsEntity.getBones()));
                             isOk = false;
                         }
                     } catch (NumberFormatException ex) {
-                        bones.setError(String.format("Your Bones is really %skg?", paramsEntity.getBones()));
+                        bones.setError(String.format("Your Bones is really %skg?", finalParamsEntity.getBones()));
                         isOk = false;
                     }
                 }
                 if ((param = kcal.getText().toString()).length() > 0) {
                     try {
-                        param = param.replaceAll(",",".");
-                        paramsEntity.setKcal(Float.parseFloat(param));
-                        if (paramsEntity.getKcal() <= 0) {
-                            kcal.setError(String.format("Your really needed %skcal?", paramsEntity.getKcal()));
+                        param = param.replaceAll(",", ".");
+                        finalParamsEntity.setKcal(Float.parseFloat(param));
+                        if (finalParamsEntity.getKcal() <= 0) {
+                            kcal.setError(String.format("Your really needed %skcal?", finalParamsEntity.getKcal()));
                             isOk = false;
                         }
                     } catch (NumberFormatException ex) {
-                        kcal.setError(String.format("Your really needed %skcal?", paramsEntity.getKcal()));
+                        kcal.setError(String.format("Your really needed %skcal?", finalParamsEntity.getKcal()));
                         isOk = false;
                     }
                 }
                 if ((param = bmi.getText().toString()).length() > 0) {
                     try {
-                        param = param.replaceAll(",",".");
-                        paramsEntity.setBmi(Float.parseFloat(param));
-                        if (paramsEntity.getBmi() <= 0) {
-                            bmi.setError(String.format("Your BMI is really %s?", paramsEntity.getBmi()));
+                        param = param.replaceAll(",", ".");
+                        finalParamsEntity.setBmi(Float.parseFloat(param));
+                        if (finalParamsEntity.getBmi() <= 0) {
+                            bmi.setError(String.format("Your BMI is really %s?", finalParamsEntity.getBmi()));
                             isOk = false;
                         }
                     } catch (NumberFormatException ex) {
-                        bmi.setError(String.format("Your BMI is really %s?", paramsEntity.getBmi()));
+                        bmi.setError(String.format("Your BMI is really %s?", finalParamsEntity.getBmi()));
                         isOk = false;
                     }
                 }
                 if (isOk) {
-                    if (dataBaseHelper.addParams(paramsEntity)) {
+                    if (dataBaseHelper.addParams(finalParamsEntity)) {
                         alertDialog.dismiss();
                         AlertDialog.Builder builder = new AlertDialog.Builder(Welcome.this);
                         builder.setTitle(R.string.congratulations);
-                        if (lastParamsEntity == null || lastParamsEntity.getWeight() == 0) {
+                        if (previousParamsEntity == null || previousParamsEntity.getWeight() == 0
+                                || previousParamsEntity.getDate() == todaySql) {
                             builder.setMessage("Nice! But it's only fist step. Hope to see you tomorrow!");
                         } else {
 
@@ -434,7 +457,7 @@ public class Welcome extends AppCompatActivity
                                 finalUserEntity.setGender(0);
                             }
                             if (isOk) {
-                                if (finalUserEntity.getId() <0 ) {
+                                if (finalUserEntity.getId() < 0) {
                                     long idb = dataBaseHelper.addUser(finalUserEntity);
                                     if (idb > 0) {
                                         GlobalVars.getInstance().setId(idb);
@@ -457,39 +480,111 @@ public class Welcome extends AppCompatActivity
     private boolean updateTitleInfo() {
         ((TextView)findViewById(R.id.welcom_user_hello)).setText("Welcome " + GlobalVars.getInstance().getName());
         UserEntity userEntity = dataBaseHelper.getUser(GlobalVars.getInstance().getId());
-        ((TextView)findViewById(R.id.welcom_age)).setText("You age: " + userEntity.getAge());
+        ((TextView)findViewById(R.id.welcom_age)).setText("Your age: " + userEntity.getAge());
         ((TextView)findViewById(R.id.welcom_height)).setText("Height: " + userEntity.getHeight());
         ((TextView)findViewById(R.id.welcom_gender)).setText("Gender:  " + userEntity.getGenderValue());
         return true;
     }
 
     private void updateParameters() {
-        lastParamsEntity = dataBaseHelper.getLastParams(GlobalVars.getInstance().getId());
+        previousParamsEntity = dataBaseHelper.getLastParams(GlobalVars.getInstance().getId());
+        todayParamsEntity = dataBaseHelper.getParamsByDate(GlobalVars.getInstance().getId(), todaySql);
         String lastDate;
-        if (lastParamsEntity.getDate() > 0) {
+        if (previousParamsEntity.getDate() > 0 && todayParamsEntity.getDate() > 0) {
+            findViewById(R.id.welcom_delta).setVisibility(View.VISIBLE);
+            findViewById(R.id.welcom_new_date).setVisibility(View.VISIBLE);
             findViewById(R.id.welcom_values_title).setVisibility(View.VISIBLE);
-
-            lastDate = "Last weighing: " + (lastParamsEntity.getDate()%100)
-                    + "." + (lastParamsEntity.getDate() - lastParamsEntity.getDate()%100)%10000
-                    + "." + (lastParamsEntity.getDate()/10000);
-            ((TextView)findViewById(R.id.welcom_kg_last)).setText(String.format("%s kg", lastParamsEntity.getWeight()));
-            ((TextView)findViewById(R.id.welcom_fat_last)).setText(String.format("%s %%", lastParamsEntity.getFat()));
-            ((TextView)findViewById(R.id.welcom_tdw_last)).setText(String.format("%s %%", lastParamsEntity.getTdw()));
-            ((TextView)findViewById(R.id.welcom_musculs_last)).setText(String.format("%s %%", lastParamsEntity.getMuscle()));
-            ((TextView)findViewById(R.id.welcom_bones_last)).setText(String.format("%s kg", lastParamsEntity.getBones()));
-            ((TextView)findViewById(R.id.welcom_kcal_last)).setText(String.format("%s kCal", lastParamsEntity.getKcal()));
-            ((TextView)findViewById(R.id.welcom_bmi_last)).setText(String.format("%s", lastParamsEntity.getBmi()));
+            ((TextView)findViewById(R.id.welcom_use_last_enter)).setVisibility(View.INVISIBLE);
+            setNewParameters(todayParamsEntity);
+            setPreviousParameters(previousParamsEntity);
+            deltaParamsEntity = getParametersDelta(todayParamsEntity,previousParamsEntity);
+            setDeltaParams(deltaParamsEntity);
+        } else if (previousParamsEntity.getDate() > 0 && todayParamsEntity.getDate() == 0) {
+            findViewById(R.id.welcom_delta).setVisibility(View.INVISIBLE);
+            findViewById(R.id.welcom_new_date).setVisibility(View.INVISIBLE);
+            findViewById(R.id.welcom_values_title).setVisibility(View.VISIBLE);
+            findViewById(R.id.welcom_use_last_enter).setVisibility(View.INVISIBLE);
+            setPreviousParameters(previousParamsEntity);
         } else {
-            lastDate = "Last weighing: Never. Do it now!!!!";
+            lastDate = "Last weighing: Never (:. Do it now!!!!";
             findViewById(R.id.welcom_values_title).setVisibility(View.INVISIBLE);
+            findViewById(R.id.welcom_delta).setVisibility(View.INVISIBLE);
+            findViewById(R.id.welcom_new_date).setVisibility(View.INVISIBLE);
+            findViewById(R.id.welcom_delta).setVisibility(View.INVISIBLE);
+            ((TextView)findViewById(R.id.welcom_use_last_enter)).setVisibility(View.VISIBLE);
+            ((TextView)findViewById(R.id.welcom_use_last_enter)).setText(lastDate);
         }
-        ((TextView)findViewById(R.id.welcom_use_last_enter)).setText(lastDate);
+
     }
 
-    private boolean updateDelta(ParamsEntity newParams) {
+    private ParamsEntity getParametersDelta(ParamsEntity todayParamsEntity, ParamsEntity previousParamsEntity) {
+        ParamsEntity deltaParamsEntity = new ParamsEntity();
+        deltaParamsEntity.setKcal(todayParamsEntity.getKcal() - previousParamsEntity.getKcal());
+        deltaParamsEntity.setBones(todayParamsEntity.getBones() - previousParamsEntity.getBones());
+        deltaParamsEntity.setWeight(todayParamsEntity.getWeight() - previousParamsEntity.getWeight());
+        deltaParamsEntity.setMuscle(todayParamsEntity.getMuscle() - previousParamsEntity.getMuscle());
+        deltaParamsEntity.setBmi(todayParamsEntity.getBmi() - previousParamsEntity.getBmi());
+        deltaParamsEntity.setFat(todayParamsEntity.getFat() - previousParamsEntity.getFat());
+        deltaParamsEntity.setTdw(todayParamsEntity.getTdw() - previousParamsEntity.getTdw());
+        return deltaParamsEntity;
+    }
 
-      //  ParamsEntity lastParams = dataBaseHelper.getLastParams()
-        return true;
+
+    private void setPreviousParameters(ParamsEntity paramsEntity) {
+        String lastDate = (paramsEntity.getDate()%100)
+                + "." + ((paramsEntity.getDate()/100)%100 < 10?"0"
+                +(paramsEntity.getDate()/100)%100:(paramsEntity.getDate()/100))
+                + "." + (paramsEntity.getDate()/10000);
+        ((TextView)findViewById(R.id.welcom_prev_date)).setText(lastDate);
+        ((TextView)findViewById(R.id.welcom_kg_last)).setText(String.format("%s", paramsEntity.getWeight()));
+        ((TextView)findViewById(R.id.welcom_fat_last)).setText(String.format("%s", paramsEntity.getFat()));
+        ((TextView)findViewById(R.id.welcom_tdw_last)).setText(String.format("%s", paramsEntity.getTdw()));
+        ((TextView)findViewById(R.id.welcom_musculs_last)).setText(String.format("%s", paramsEntity.getMuscle()));
+        ((TextView)findViewById(R.id.welcom_bones_last)).setText(String.format("%s", paramsEntity.getBones()));
+        ((TextView)findViewById(R.id.welcom_kcal_last)).setText(String.format("%s", paramsEntity.getKcal()));
+        ((TextView)findViewById(R.id.welcom_bmi_last)).setText(String.format("%s", paramsEntity.getBmi()));
+    }
+
+    private void setNewParameters(ParamsEntity paramsEntity) {
+        String lastDate = (paramsEntity.getDate()%100)
+                + "." + ((paramsEntity.getDate()/100)%100 < 10?"0"
+                +(paramsEntity.getDate()/100)%100:(paramsEntity.getDate()/100))
+                + "." + (paramsEntity.getDate()/10000);
+        ((TextView)findViewById(R.id.welcom_new_date)).setText(lastDate);
+        ((TextView)findViewById(R.id.welcom_kg_new)).setText(String.format("%s", paramsEntity.getWeight()));
+        ((TextView)findViewById(R.id.welcom_fat_new)).setText(String.format("%s", paramsEntity.getFat()));
+        ((TextView)findViewById(R.id.welcom_tdw_new)).setText(String.format("%s", paramsEntity.getTdw()));
+        ((TextView)findViewById(R.id.welcom_musculs_new)).setText(String.format("%s", paramsEntity.getMuscle()));
+        ((TextView)findViewById(R.id.welcom_bones_new)).setText(String.format("%s", paramsEntity.getBones()));
+        ((TextView)findViewById(R.id.welcom_kcal_new)).setText(String.format("%s", paramsEntity.getKcal()));
+        ((TextView)findViewById(R.id.welcom_bmi_new)).setText(String.format("%s", paramsEntity.getBmi()));
+    }
+
+    private void setDeltaParams(ParamsEntity paramsEntity) {
+      //  ((TextView)findViewById(R.id.welcom_new_date)).setText(lastDate);
+        ((TextView)findViewById(R.id.welcom_kg_delta)).setText(String.format("%s", paramsEntity.getWeight()));
+        if (paramsEntity.getWeight() > 1) {
+            GlobalFunc.addScaledImage(Welcome.this, ((TextView) findViewById(R.id.welcom_kg_delta)),
+                    Emotions.getSmileyResource(Emotions.VERY_VERY_SAD), 0, 0, 0);
+        } else if (paramsEntity.getWeight() > 0.5) {
+            GlobalFunc.addScaledImage(Welcome.this, ((TextView) findViewById(R.id.welcom_kg_delta)),
+                    Emotions.getSmileyResource(Emotions.VERY_SAD), 0, 0, 0);
+        } else if (paramsEntity.getWeight() > 0) {
+            GlobalFunc.addScaledImage(Welcome.this, ((TextView) findViewById(R.id.welcom_kg_delta)),
+                    Emotions.getSmileyResource(Emotions.SAD), 0, 0, 0);
+        } else if (paramsEntity.getWeight() == 0) {
+            GlobalFunc.addScaledImage(Welcome.this, ((TextView) findViewById(R.id.welcom_kg_delta)),
+                    Emotions.getSmileyResource(Emotions.NORMAL), 0, 0, 0);
+        } else if (paramsEntity.getWeight() < 0) {
+            GlobalFunc.addScaledImage(Welcome.this, ((TextView)findViewById(R.id.welcom_kg_delta)),
+                    Emotions.getSmileyResource(Emotions.HAPPY), 0, 0, 0);
+        }
+        ((TextView)findViewById(R.id.welcom_fat_delta)).setText(String.format("%s", paramsEntity.getFat()));
+        ((TextView)findViewById(R.id.welcom_tdw_delta)).setText(String.format("%s", paramsEntity.getTdw()));
+        ((TextView) findViewById(R.id.welcom_musculs_delta)).setText(String.format("%s", paramsEntity.getMuscle()));
+        ((TextView)findViewById(R.id.welcom_bones_delta)).setText(String.format("%s", paramsEntity.getBones()));
+        ((TextView)findViewById(R.id.welcom_kcal_delta)).setText(String.format("%s", paramsEntity.getKcal()));
+        ((TextView)findViewById(R.id.welcom_bmi_delta)).setText(String.format("%s", paramsEntity.getBmi()));
     }
 
 }
