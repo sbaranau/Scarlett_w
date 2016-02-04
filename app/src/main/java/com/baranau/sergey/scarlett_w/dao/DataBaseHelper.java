@@ -312,6 +312,7 @@ public class DataBaseHelper extends SQLiteOpenHelper {
         return user;
     }
 
+
     public boolean updateUser(UserEntity user) {
         try {
             SQLiteDatabase db = this.getReadableDatabase();
@@ -399,34 +400,36 @@ public class DataBaseHelper extends SQLiteOpenHelper {
 
 
     public boolean addParams(ParamsEntity paramsEntity) {
-        boolean result = true;
+        long result;
         try {
             SQLiteDatabase db = this.getReadableDatabase();
             ParamsEntity temp = getParamsByDate(paramsEntity.getUserId(), paramsEntity.getDate());
             ContentValues contentValues = new ContentValues();
             contentValues.put(PARAMS_COLUMN_BMI, paramsEntity.getBmi());
             contentValues.put(PARAMS_COLUMN_BONES, paramsEntity.getBones());
-            contentValues.put(PARAMS_COLUMN_DATE, todaySql);
+            contentValues.put(PARAMS_COLUMN_DATE, paramsEntity.getDate());
             contentValues.put(PARAMS_COLUMN_FAT, paramsEntity.getFat());
             contentValues.put(PARAMS_COLUMN_KCAL, paramsEntity.getKcal());
             contentValues.put(PARAMS_COLUMN_MISHCY, paramsEntity.getMuscle());
             contentValues.put(PARAMS_COLUMN_USEID, paramsEntity.getUserId());
             contentValues.put(PARAMS_COLUMN_WEIGHT, paramsEntity.getWeight());
             contentValues.put(PARAMS_COLUMN_TDW, paramsEntity.getTdw());
-
             if (temp.getDate() > 0) {
                 contentValues.put(PARAMS_COLUMN_DATE, temp.getDate());
-                int wresult = db.update(PARAMS_TABLE_NAME, contentValues,
+                result = db.update(PARAMS_TABLE_NAME, contentValues,
                         PARAMS_COLUMN_USEID + " = ? AND " + PARAMS_COLUMN_DATE + " = ?",
                         new String[]{String.valueOf(temp.getUserId()), String.valueOf(temp.getDate())});
             } else {
-                result = db.insert(PARAMS_TABLE_NAME, null, contentValues) == 1;
+                if (paramsEntity.getDate() == 0) {
+                    contentValues.put(PARAMS_COLUMN_DATE, todaySql);
+                }
+                result = db.insert(PARAMS_TABLE_NAME, null, contentValues);
             }
         } catch (Exception ex) {
             Log.e("Insert Params", "", ex);
             return false;
         }
-        return result;
+        return result >= 1;
     }
 
 /*

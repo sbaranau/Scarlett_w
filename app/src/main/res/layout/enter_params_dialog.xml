@@ -13,7 +13,8 @@
         android:layout_alignParentStart="true"
         android:layout_alignTop="@+id/kg"
         android:layout_above="@+id/fat"
-        android:gravity="center" />
+        android:gravity="center"
+        android:textSize="15sp" />
 
     <EditText
         android:layout_width="match_parent"
@@ -22,7 +23,8 @@
         android:layout_alignParentTop="true"
         android:layout_toRightOf="@+id/textView2"
         android:gravity="center"
-        android:layout_toLeftOf="@+id/textView14" />
+        android:layout_toLeftOf="@+id/textView14"
+        android:textSize="15sp" />
 
     <TextView
         android:layout_width="match_parent"
@@ -37,7 +39,8 @@
         android:layout_alignLeft="@+id/textView2"
         android:layout_centerHorizontal="true"
         android:layout_below="@+id/textView2"
-        android:gravity="center" />
+        android:gravity="center"
+        android:textSize="15sp" />
 
     <EditText
         android:layout_width="match_parent"
@@ -48,7 +51,8 @@
         android:layout_alignStart="@+id/kg"
         android:layout_alignRight="@+id/kg"
         android:layout_alignEnd="@+id/kg"
-        android:gravity="center" />
+        android:gravity="center"
+        android:textSize="15sp" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -59,7 +63,8 @@
         android:layout_alignTop="@+id/tdw"
         android:layout_alignLeft="@+id/textView3"
         android:layout_alignBottom="@+id/tdw"
-        android:gravity="center" />
+        android:gravity="center"
+        android:textSize="15sp" />
 
     <EditText
         android:layout_width="match_parent"
@@ -69,7 +74,8 @@
         android:layout_alignLeft="@+id/fat"
         android:layout_alignRight="@+id/fat"
         android:layout_below="@+id/fat"
-        android:gravity="center" />
+        android:gravity="center"
+        android:textSize="15sp" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -80,7 +86,8 @@
         android:layout_alignTop="@+id/mishci"
         android:layout_alignBottom="@+id/mishci"
         android:layout_alignLeft="@+id/textView4"
-        android:gravity="center" />
+        android:gravity="center"
+        android:textSize="15sp" />
 
     <EditText
         android:layout_width="match_parent"
@@ -89,7 +96,8 @@
         android:layout_below="@+id/tdw"
         android:layout_alignRight="@+id/tdw"
         android:layout_alignLeft="@+id/tdw"
-        android:gravity="center" />
+        android:gravity="center"
+        android:textSize="15sp" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -100,7 +108,8 @@
         android:layout_alignLeft="@+id/textView2"
         android:layout_alignTop="@+id/bones"
         android:layout_alignBottom="@+id/bones"
-        android:gravity="center" />
+        android:gravity="center"
+        android:textSize="15sp" />
 
     <EditText
         android:layout_width="match_parent"
@@ -109,7 +118,8 @@
         android:layout_below="@+id/mishci"
         android:layout_alignLeft="@+id/mishci"
         android:layout_alignRight="@+id/mishci"
-        android:gravity="center" />
+        android:gravity="center"
+        android:textSize="15sp" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -120,7 +130,8 @@
         android:layout_alignTop="@+id/kcal"
         android:layout_alignBottom="@+id/kcal"
         android:layout_alignLeft="@+id/textView2"
-        android:layout_alignRight="@+id/textView2" />
+        android:layout_alignRight="@+id/textView2"
+        android:textSize="15sp" />
 
     <EditText
         android:layout_width="match_parent"
@@ -129,7 +140,8 @@
         android:layout_below="@+id/bones"
         android:layout_alignLeft="@+id/bones"
         android:layout_alignRight="@+id/bones"
-        android:gravity="center" />
+        android:gravity="center"
+        android:textSize="15sp" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -149,7 +161,8 @@
         android:layout_below="@+id/kcal"
         android:layout_alignLeft="@+id/kcal"
         android:layout_alignRight="@+id/kcal"
-        android:gravity="center" />
+        android:gravity="center"
+        android:textSize="15sp" />
 
     <TextView
         android:layout_width="30dp"
@@ -160,7 +173,8 @@
         android:layout_alignParentRight="true"
         android:layout_alignParentEnd="true"
         android:layout_above="@+id/fat"
-        android:gravity="center" />
+        android:gravity="center"
+        android:textSize="15sp" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -173,12 +187,13 @@
         android:layout_alignEnd="@+id/textView14"
         android:layout_alignBottom="@+id/fat"
         android:layout_below="@+id/kg"
-        android:gravity="center" />
+        android:gravity="center"
+        android:textSize="15sp" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="%"
+        android:text="sp"
         android:id="@+id/textView16"
         android:layout_alignTop="@+id/tdw"
         android:layout_alignBottom="@+id/tdw"
@@ -198,18 +213,20 @@
         android:layout_alignRight="@+id/textView16"
         android:layout_alignEnd="@+id/textView16"
         android:layout_alignBottom="@+id/mishci"
-        android:gravity="center" />
+        android:gravity="center"
+        android:textSize="15sp" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="%"
+        android:text="kg"
         android:id="@+id/textView18"
         android:layout_alignTop="@+id/bones"
         android:gravity="center"
         android:layout_alignBottom="@+id/bones"
         android:layout_alignLeft="@+id/textView14"
-        android:layout_alignRight="@+id/textView14" />
+        android:layout_alignRight="@+id/textView14"
+        android:textSize="15sp" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -220,7 +237,8 @@
         android:layout_alignBottom="@+id/kcal"
         android:layout_alignLeft="@+id/textView14"
         android:layout_alignRight="@+id/textView14"
-        android:gravity="center" />
+        android:gravity="center"
+        android:visibility="gone" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -231,6 +249,37 @@
         android:layout_alignLeft="@+id/textView14"
         android:layout_alignRight="@+id/textView14"
         android:layout_alignBottom="@+id/bmi"
+        android:gravity="center"
+        android:visibility="gone" />
+
+    <CheckBox
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Change date"
+        android:id="@+id/welcom_change_date"
+        android:layout_below="@+id/textView8"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:checked="false" />
+
+    <DatePicker
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/welcom_datePicker"
+        android:layout_below="@+id/welcom_change_date"
+        android:layout_alignParentLeft="false"
+        android:layout_alignParentStart="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="New Text"
+        android:id="@+id/welcom_show_date"
+        android:layout_alignParentTop="false"
+        android:layout_centerHorizontal="true"
+        android:layout_below="@+id/welcom_change_date"
+        android:layout_alignLeft="@+id/textView2"
+        android:layout_alignRight="@+id/textView14"
         android:gravity="center" />
 
 

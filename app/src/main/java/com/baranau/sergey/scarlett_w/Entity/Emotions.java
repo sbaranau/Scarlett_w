@@ -42,10 +42,11 @@ public class Emotions {
     public static int VERY_VERY_SAD = 11;
     public static int CRYING = 12;
     public static int SLEEPING = 13;
-    public static int NO_EMOTIONS = 14;
-    public static int CAT_LAUGHING = 15;
-    public static int CAT_CRYING = 15;
-    public static int CAT_CONFUSED = 15;
+    public static int OGO = 14;
+    public static int NO_EMOTIONS = 15;
+    public static int CAT_LAUGHING = 16;
+    public static int CAT_CRYING = 17;
+    public static int CAT_CONFUSED = 18;
 
     public static int getSmileyResource(int which) {
         return sIconIds[which];

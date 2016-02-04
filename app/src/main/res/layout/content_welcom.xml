@@ -114,7 +114,7 @@
         android:id="@+id/welcom_kg_delta"
         android:layout_alignTop="@+id/welcom_kg_new"
         android:layout_toRightOf="@+id/welcom_kg_new"
-        android:gravity="center"
+        android:gravity="center|right"
         android:textSize="16sp"
         android:layout_alignLeft="@+id/welcom_delta"
         android:layout_alignRight="@+id/welcom_delta" />
@@ -149,7 +149,7 @@
         android:layout_below="@+id/welcom_kg_delta"
         android:layout_alignLeft="@+id/welcom_kg_delta"
         android:layout_alignStart="@+id/welcom_kg_delta"
-        android:gravity="center"
+        android:gravity="center|right"
         android:textSize="16sp"
         android:layout_alignRight="@+id/welcom_kg_delta"
         android:layout_alignEnd="@+id/welcom_kg_delta" />
@@ -185,7 +185,7 @@
         android:layout_alignTop="@+id/welcom_tdw_new"
         android:layout_alignLeft="@+id/welcom_fat_delta"
         android:layout_alignStart="@+id/welcom_fat_delta"
-        android:gravity="center"
+        android:gravity="center|right"
         android:textSize="16sp"
         android:layout_alignRight="@+id/welcom_fat_delta"
         android:layout_alignEnd="@+id/welcom_fat_delta" />
@@ -221,7 +221,7 @@
         android:layout_below="@+id/welcom_tdw_delta"
         android:layout_alignLeft="@+id/welcom_kg_delta"
         android:layout_alignStart="@+id/welcom_tdw_delta"
-        android:gravity="center"
+        android:gravity="center|right"
         android:textSize="16sp"
         android:layout_alignRight="@+id/welcom_tdw_delta"
         android:layout_alignEnd="@+id/welcom_tdw_delta" />
@@ -257,7 +257,7 @@
         android:layout_below="@+id/welcom_musculs_delta"
         android:layout_alignLeft="@+id/welcom_kg_delta"
         android:layout_alignStart="@+id/welcom_musculs_delta"
-        android:gravity="center"
+        android:gravity="center|right"
         android:textSize="16sp"
         android:layout_alignRight="@+id/welcom_musculs_delta"
         android:layout_alignEnd="@+id/welcom_musculs_delta" />
@@ -293,7 +293,7 @@
         android:layout_below="@+id/welcom_bones_delta"
         android:layout_alignLeft="@+id/welcom_kg_delta"
         android:layout_alignStart="@+id/welcom_bones_delta"
-        android:gravity="center"
+        android:gravity="center|right"
         android:textSize="16sp"
         android:layout_alignRight="@+id/welcom_bones_delta"
         android:layout_alignEnd="@+id/welcom_bones_delta" />
@@ -328,7 +328,7 @@
         android:text=" "
         android:id="@+id/welcom_bmi_delta"
         android:layout_alignTop="@+id/welcom_bmi_new"
-        android:gravity="center"
+        android:gravity="center|right"
         android:textSize="16sp"
         android:layout_alignRight="@+id/welcom_kcal_delta"
         android:layout_alignEnd="@+id/welcom_kcal_delta"
@@ -336,9 +336,9 @@
         android:layout_toEndOf="@+id/welcom_bmi_new" />
 
     <TextView
-        android:layout_width="60dp"
+        android:layout_width="wrap_content"
         android:layout_height="20dp"
-        android:text="Weight:"
+        android:text="Weight,kg:"
         android:id="@+id/textView21"
         android:layout_above="@+id/welcom_fat_last"
         android:layout_alignParentStart="true"
@@ -350,7 +350,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Fat:"
+        android:text="Fat, %:"
         android:id="@+id/textView22"
         android:layout_above="@+id/welcom_tdw_last"
         android:layout_below="@+id/welcom_kg_last"
@@ -363,7 +363,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="TDW:"
+        android:text="TDW,%:"
         android:id="@+id/textView23"
         android:layout_alignBottom="@+id/welcom_tdw_last"
         android:layout_alignRight="@+id/textView22"
@@ -376,7 +376,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Muscle:"
+        android:text="Muscle,%:"
         android:id="@+id/textView24"
         android:layout_above="@+id/welcom_bones_last"
         android:layout_alignParentLeft="true"
@@ -389,7 +389,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Bones:"
+        android:text="Bones,kg:"
         android:id="@+id/textView25"
         android:layout_below="@+id/welcom_musculs_last"
         android:layout_above="@+id/welcom_kcal_last"
@@ -402,7 +402,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="kCal:"
+        android:text="KCal:"
         android:id="@+id/textView26"
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true"

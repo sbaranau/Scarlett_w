@@ -2,8 +2,11 @@ package com.baranau.sergey.scarlett_w;
 
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
+import android.text.SpannableStringBuilder;
+import android.text.style.ImageSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.support.design.widget.NavigationView;
@@ -16,6 +19,9 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
+import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.RadioButton;
 import android.widget.Spinner;
@@ -35,13 +41,13 @@ import java.util.Locale;
 
 public class Welcome extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
-    HashMap<Integer, String> user;
-    DataBaseHelper dataBaseHelper;
-    ParamsEntity previousParamsEntity = new ParamsEntity();
-    ParamsEntity todayParamsEntity = new ParamsEntity();
-    ParamsEntity deltaParamsEntity = new ParamsEntity();
-    SimpleDateFormat formatterForInt = new SimpleDateFormat("yyyyMMdd", Locale.getDefault());
-    int todaySql = 0;
+    private HashMap<Integer, String> user;
+    private DataBaseHelper dataBaseHelper;
+    private ParamsEntity previousParamsEntity = new ParamsEntity();
+    private ParamsEntity todayParamsEntity = new ParamsEntity();
+    private ParamsEntity deltaParamsEntity = new ParamsEntity();
+    private SimpleDateFormat formatterForInt = new SimpleDateFormat("yyyyMMdd", Locale.getDefault());
+    private int todaySql = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -110,6 +116,7 @@ public class Welcome extends AppCompatActivity
             GlobalVars.getInstance().setName(user.get(key));
             builder.setPositiveButton("Yes, It's me", new DialogInterface.OnClickListener() {
                 public void onClick(DialogInterface dialog, int id) {
+                    dataBaseHelper.deleteAllParams();
                     dataBaseHelper.addTestParams(GlobalVars.getInstance().getId());
                     dialog.cancel();
                     updateTitleInfo();
@@ -238,6 +245,15 @@ public class Welcome extends AppCompatActivity
         final EditText bones = (EditText) promptsView.findViewById(R.id.bones);
         final EditText kcal = (EditText) promptsView.findViewById(R.id.kcal);
         final EditText bmi = (EditText) promptsView.findViewById(R.id.bmi);
+        final DatePicker datePicker = (DatePicker) promptsView.findViewById(R.id.welcom_datePicker);
+        final CheckBox setDateCheckBox = (CheckBox) promptsView.findViewById(R.id.welcom_change_date);
+        final TextView showCurrentDate = ((TextView)promptsView.findViewById(R.id.welcom_show_date));
+        showCurrentDate.setText("Params for today");
+        setDateCheckBox.setChecked(false);
+
+
+
+        datePicker.setVisibility(View.INVISIBLE);
         if (paramsEntity == null || paramsEntity.getWeight() == 0) {
             paramsEntity = new ParamsEntity();
             paramsEntity.setDate(todaySql);
@@ -263,11 +279,45 @@ public class Welcome extends AppCompatActivity
         final AlertDialog alertDialog = alertDialogBuilder.create();
         alertDialog.show();
         final ParamsEntity finalParamsEntity = paramsEntity;
+        setDateCheckBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked) {
+                    datePicker.setVisibility(View.VISIBLE);
+                    showCurrentDate.setVisibility(View.GONE);
+                } else {
+                    datePicker.setVisibility(View.GONE);
+                    showCurrentDate.setVisibility(View.VISIBLE);
+                    showCurrentDate.setText("Params for today");
+                    finalParamsEntity.setDate(todaySql);
+
+                }
+            }
+        });
+        datePicker.init((paramsEntity.getDate() / 10000), (paramsEntity.getDate() / 100) % 100 - 1, paramsEntity.getDate() % 100,
+                new DatePicker.OnDateChangedListener() {
+                    @Override
+                    public void onDateChanged(DatePicker view, int year, int monthOfYear, int dayOfMonth) {
+                        int date = year * 10000 + (monthOfYear + 1)* 100 + dayOfMonth;
+                        ParamsEntity oldParamsEntity = dataBaseHelper.getParamsByDate(GlobalVars.getInstance().getId(), date);
+                        if (oldParamsEntity.getDate() > 0 || oldParamsEntity.getWeight() == 0) {
+                            kg.setText(oldParamsEntity.getWeight() + "");
+                            fat.setText(oldParamsEntity.getFat() + "");
+                            tdw.setText(oldParamsEntity.getTdw() + "");
+                            muscle.setText(oldParamsEntity.getMuscle() + "");
+                            bones.setText(oldParamsEntity.getBones() + "");
+                            bmi.setText(oldParamsEntity.getBmi() + "");
+                            kcal.setText(oldParamsEntity.getKcal() + "");
+                        }
+                        finalParamsEntity.setDate(date);
+                    }
+                });
+
+
         alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 boolean isOk = true;
-
 
                 finalParamsEntity.setUserId(GlobalVars.getInstance().getId());
                 String param;
@@ -299,6 +349,9 @@ public class Welcome extends AppCompatActivity
                         fat.setError(String.format("Your FAT is really %s%%?", finalParamsEntity.getFat()));
                         isOk = false;
                     }
+                } else {
+                    fat.setError("Please, set value");
+                    isOk = false;
                 }
                 if ((param = tdw.getText().toString()).length() > 0) {
                     try {
@@ -312,6 +365,9 @@ public class Welcome extends AppCompatActivity
                         tdw.setError(String.format("Your TDW is really %s%%?", finalParamsEntity.getTdw()));
                         isOk = false;
                     }
+                } else {
+                    tdw.setError("Please, set value");
+                    isOk = false;
                 }
                 if ((param = muscle.getText().toString()).length() > 0) {
                     try {
@@ -325,6 +381,9 @@ public class Welcome extends AppCompatActivity
                         muscle.setError(String.format("Your Muscles is really %s%%?", finalParamsEntity.getMuscle()));
                         isOk = false;
                     }
+                } else {
+                    muscle.setError("Please, set value");
+                    isOk = false;
                 }
                 if ((param = bones.getText().toString()).length() > 0) {
                     try {
@@ -338,6 +397,9 @@ public class Welcome extends AppCompatActivity
                         bones.setError(String.format("Your Bones is really %skg?", finalParamsEntity.getBones()));
                         isOk = false;
                     }
+                } else {
+                    bones.setError("Please, set value");
+                    isOk = false;
                 }
                 if ((param = kcal.getText().toString()).length() > 0) {
                     try {
@@ -351,6 +413,9 @@ public class Welcome extends AppCompatActivity
                         kcal.setError(String.format("Your really needed %skcal?", finalParamsEntity.getKcal()));
                         isOk = false;
                     }
+                } else {
+                    kcal.setError("Please, set value");
+                    isOk = false;
                 }
                 if ((param = bmi.getText().toString()).length() > 0) {
                     try {
@@ -364,23 +429,67 @@ public class Welcome extends AppCompatActivity
                         bmi.setError(String.format("Your BMI is really %s?", finalParamsEntity.getBmi()));
                         isOk = false;
                     }
+                } else {
+                    bmi.setError("Please, set value");
+                    isOk = false;
                 }
                 if (isOk) {
                     if (dataBaseHelper.addParams(finalParamsEntity)) {
                         alertDialog.dismiss();
                         AlertDialog.Builder builder = new AlertDialog.Builder(Welcome.this);
                         builder.setTitle(R.string.congratulations);
+                        updateTitleInfo();
+                        updateParameters();
+                        SpannableStringBuilder messageBuilder = new SpannableStringBuilder();
                         if (previousParamsEntity == null || previousParamsEntity.getWeight() == 0
                                 || previousParamsEntity.getDate() == todaySql) {
+                            builder.setTitle("Great!!!");
                             builder.setMessage("Nice! But it's only fist step. Hope to see you tomorrow!");
                         } else {
+                            if (deltaParamsEntity.getWeight() < 0 && deltaParamsEntity.getFat() < 0) {
+                                builder.setTitle("WAU-WAU-WAU!!!!");
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                                    messageBuilder.append("You are looking so good!!!")
+                                            .append(" ", new ImageSpan(Welcome.this, Emotions.getSmileyResource(Emotions.CAT_LAUGHING)), 0)
+                                            .append(" You did it!!!");
+                                } else {
+                                    messageBuilder.append("You are looking so good!!!").append(" ");
+                                    messageBuilder.setSpan(new ImageSpan(Welcome.this, Emotions.getSmileyResource(Emotions.CAT_LAUGHING)),
+                                            messageBuilder.length() - 1, messageBuilder.length(), 0);
+                                    messageBuilder.append(" You did it!!!");
+                                }
 
+                            } else if (deltaParamsEntity.getWeight() < 0 || deltaParamsEntity.getFat() < 0) {
+                                builder.setTitle("Very Good!");
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                                    messageBuilder.append(" Your results is quiet good")
+                                            .append(" ", new ImageSpan(Welcome.this, Emotions.getSmileyResource(Emotions.CAT_LAUGHING)), 0)
+                                            .append(" ");
+                                } else {
+                                    messageBuilder.append(" Your results is quiet good").append(" ");
+                                    messageBuilder.setSpan(new ImageSpan(Welcome.this, Emotions.getSmileyResource(Emotions.CAT_LAUGHING)),
+                                            messageBuilder.length() - 1, messageBuilder.length(), 0);
+                                    messageBuilder.append(" ");
+                                }
+
+                            } else {
+                                builder.setTitle(" Saved");
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                                    messageBuilder.append("")
+                                            .append(" ", new ImageSpan(Welcome.this, Emotions.getSmileyResource(Emotions.CAT_CONFUSED)), 0)
+                                            .append(" ");
+                                } else {
+                                    messageBuilder.append("").append(" ");
+                                    messageBuilder.setSpan(new ImageSpan(Welcome.this, Emotions.getSmileyResource(Emotions.CAT_CONFUSED)),
+                                            messageBuilder.length() - 1, messageBuilder.length(), 0);
+                                    messageBuilder.append(" ");
+                                }
+                            }
+                            builder.setMessage(messageBuilder);
                         }
 
                         builder.setPositiveButton(getString(R.string.ok), new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int id) {
-                                updateTitleInfo();
-                                updateParameters();
                                 dialog.cancel();
                                 dialog.dismiss();
                             }
@@ -413,11 +522,8 @@ public class Welcome extends AppCompatActivity
         userAge.setAdapter(adapter);
         if (userEntity == null) {
             userEntity = new UserEntity();
-            String lastDate = "Last weighing: Never.Lets do it now!!!!";
             findViewById(R.id.welcom_values_title).setVisibility(View.INVISIBLE);
-            ((TextView)findViewById(R.id.welcom_use_last_enter)).setText(lastDate);
         }
-
         userName.setText(userEntity.getName());
         userHeight.setText(String.format("%d", userEntity.getHeight()));
         userMan.setChecked(userEntity.getGender() == 1);
@@ -494,7 +600,7 @@ public class Welcome extends AppCompatActivity
             findViewById(R.id.welcom_delta).setVisibility(View.VISIBLE);
             findViewById(R.id.welcom_new_date).setVisibility(View.VISIBLE);
             findViewById(R.id.welcom_values_title).setVisibility(View.VISIBLE);
-            ((TextView)findViewById(R.id.welcom_use_last_enter)).setVisibility(View.INVISIBLE);
+            findViewById(R.id.welcom_use_last_enter).setVisibility(View.INVISIBLE);
             setNewParameters(todayParamsEntity);
             setPreviousParameters(previousParamsEntity);
             deltaParamsEntity = getParametersDelta(todayParamsEntity,previousParamsEntity);
@@ -506,13 +612,35 @@ public class Welcome extends AppCompatActivity
             findViewById(R.id.welcom_use_last_enter).setVisibility(View.INVISIBLE);
             setPreviousParameters(previousParamsEntity);
         } else {
-            lastDate = "Last weighing: Never (:. Do it now!!!!";
+
+            SpannableStringBuilder builder = new SpannableStringBuilder();
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                builder.append("Last weighing: Never ")
+                        .append(" ", new ImageSpan(Welcome.this, Emotions.getSmileyResource(Emotions.CAT_CONFUSED)), 0)
+                        .append(" Do it now!!!!");
+            } else {
+                builder.append("Last weighing: Never ").append(" ");
+                builder.setSpan(new ImageSpan(Welcome.this, Emotions.getSmileyResource(Emotions.CAT_CONFUSED)),
+                        builder.length() - 1, builder.length(), 0);
+                builder.append(" Do it now!!!!");
+            }
+
             findViewById(R.id.welcom_values_title).setVisibility(View.INVISIBLE);
+            findViewById(R.id.welcom_prev_date).setVisibility(View.INVISIBLE);
+            findViewById(R.id.textView21).setVisibility(View.INVISIBLE);
+            findViewById(R.id.textView22).setVisibility(View.INVISIBLE);
+            findViewById(R.id.textView23).setVisibility(View.INVISIBLE);
+            findViewById(R.id.textView24).setVisibility(View.INVISIBLE);
+            findViewById(R.id.textView25).setVisibility(View.INVISIBLE);
+            findViewById(R.id.textView26).setVisibility(View.INVISIBLE);
+            findViewById(R.id.textView27).setVisibility(View.INVISIBLE);
+
             findViewById(R.id.welcom_delta).setVisibility(View.INVISIBLE);
             findViewById(R.id.welcom_new_date).setVisibility(View.INVISIBLE);
             findViewById(R.id.welcom_delta).setVisibility(View.INVISIBLE);
-            ((TextView)findViewById(R.id.welcom_use_last_enter)).setVisibility(View.VISIBLE);
-            ((TextView)findViewById(R.id.welcom_use_last_enter)).setText(lastDate);
+            (findViewById(R.id.welcom_use_last_enter)).setVisibility(View.VISIBLE);
+            ((TextView)findViewById(R.id.welcom_use_last_enter)).setText(builder);
+
         }
 
     }
@@ -580,6 +708,38 @@ public class Welcome extends AppCompatActivity
                     Emotions.getSmileyResource(Emotions.HAPPY), 0, 0, 0);
         }
         ((TextView)findViewById(R.id.welcom_fat_delta)).setText(String.format("%s", paramsEntity.getFat()));
+        if (paramsEntity.getFat() > 1) {
+            GlobalFunc.addScaledImage(Welcome.this, ((TextView) findViewById(R.id.welcom_fat_delta)),
+                    Emotions.getSmileyResource(Emotions.VERY_VERY_SAD), 0, 0, 0);
+        } else if (paramsEntity.getFat() > 0.5) {
+            GlobalFunc.addScaledImage(Welcome.this, ((TextView) findViewById(R.id.welcom_fat_delta)),
+                    Emotions.getSmileyResource(Emotions.VERY_SAD), 0, 0, 0);
+        } else if (paramsEntity.getFat() > 0) {
+            GlobalFunc.addScaledImage(Welcome.this, ((TextView) findViewById(R.id.welcom_fat_delta)),
+                    Emotions.getSmileyResource(Emotions.SAD), 0, 0, 0);
+        } else if (paramsEntity.getFat() == 0) {
+            GlobalFunc.addScaledImage(Welcome.this, ((TextView) findViewById(R.id.welcom_fat_delta)),
+                    Emotions.getSmileyResource(Emotions.NORMAL), 0, 0, 0);
+        } else if (paramsEntity.getFat() < 0) {
+            GlobalFunc.addScaledImage(Welcome.this, ((TextView)findViewById(R.id.welcom_fat_delta)),
+                    Emotions.getSmileyResource(Emotions.HAPPY), 0, 0, 0);
+        }
+        if (paramsEntity.getMuscle() > 1) {
+            GlobalFunc.addScaledImage(Welcome.this, ((TextView) findViewById(R.id.welcom_musculs_delta)),
+                    Emotions.getSmileyResource(Emotions.VERY_VERY_HAPPY), 0, 0, 0);
+        } else if (paramsEntity.getMuscle() > 0.5) {
+            GlobalFunc.addScaledImage(Welcome.this, ((TextView) findViewById(R.id.welcom_musculs_delta)),
+                    Emotions.getSmileyResource(Emotions.VERY_HAPPY), 0, 0, 0);
+        } else if (paramsEntity.getMuscle() > 0) {
+            GlobalFunc.addScaledImage(Welcome.this, ((TextView) findViewById(R.id.welcom_musculs_delta)),
+                    Emotions.getSmileyResource(Emotions.HAPPY), 0, 0, 0);
+        } else if (paramsEntity.getMuscle() == 0) {
+            GlobalFunc.addScaledImage(Welcome.this, ((TextView) findViewById(R.id.welcom_musculs_delta)),
+                    Emotions.getSmileyResource(Emotions.NORMAL), 0, 0, 0);
+        } else if (paramsEntity.getMuscle() < 0) {
+            GlobalFunc.addScaledImage(Welcome.this, ((TextView)findViewById(R.id.welcom_musculs_delta)),
+                    Emotions.getSmileyResource(Emotions.SAD), 0, 0, 0);
+        }
         ((TextView)findViewById(R.id.welcom_tdw_delta)).setText(String.format("%s", paramsEntity.getTdw()));
         ((TextView) findViewById(R.id.welcom_musculs_delta)).setText(String.format("%s", paramsEntity.getMuscle()));
         ((TextView)findViewById(R.id.welcom_bones_delta)).setText(String.format("%s", paramsEntity.getBones()));
