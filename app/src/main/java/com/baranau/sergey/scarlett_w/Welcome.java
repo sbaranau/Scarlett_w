@@ -41,7 +41,7 @@ import java.util.Locale;
 
 public class Welcome extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
-    private HashMap<Integer, String> user;
+
     private DataBaseHelper dataBaseHelper;
     private ParamsEntity previousParamsEntity = new ParamsEntity();
     private ParamsEntity todayParamsEntity = new ParamsEntity();
@@ -64,8 +64,7 @@ public class Welcome extends AppCompatActivity
 
         dataBaseHelper.deleteAllParams();
 
-
-        user = dataBaseHelper.getUsersNames();
+        final HashMap<Integer, String> user = dataBaseHelper.getUsersNames();
         SimpleDateFormat df = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
         String currentDateTimeString = df.format(new Date());
         ((TextView)findViewById(R.id.welcom_date)).setText(String.format("Today: %s", currentDateTimeString));
@@ -298,7 +297,7 @@ public class Welcome extends AppCompatActivity
                 new DatePicker.OnDateChangedListener() {
                     @Override
                     public void onDateChanged(DatePicker view, int year, int monthOfYear, int dayOfMonth) {
-                        int date = year * 10000 + (monthOfYear + 1)* 100 + dayOfMonth;
+                        int date = year * 10000 + (monthOfYear + 1) * 100 + dayOfMonth;
                         ParamsEntity oldParamsEntity = dataBaseHelper.getParamsByDate(GlobalVars.getInstance().getId(), date);
                         if (oldParamsEntity.getDate() > 0 || oldParamsEntity.getWeight() == 0) {
                             kg.setText(oldParamsEntity.getWeight() + "");
@@ -536,6 +535,7 @@ public class Welcome extends AppCompatActivity
                                        int position, long id) {
                 finalUserEntity.setAge(position + 1);
             }
+
             @Override
             public void onNothingSelected(AdapterView<?> arg0) {
             }
@@ -586,7 +586,9 @@ public class Welcome extends AppCompatActivity
     private boolean updateTitleInfo() {
         ((TextView)findViewById(R.id.welcom_user_hello)).setText("Welcome " + GlobalVars.getInstance().getName());
         UserEntity userEntity = dataBaseHelper.getUser(GlobalVars.getInstance().getId());
-        ((TextView)findViewById(R.id.welcom_age)).setText("Your age: " + userEntity.getAge());
+        GlobalVars.getInstance().setAge(userEntity.getAge());
+        GlobalVars.getInstance().setGender(userEntity.getGender());
+                ((TextView) findViewById(R.id.welcom_age)).setText("Your age: " + userEntity.getAge());
         ((TextView)findViewById(R.id.welcom_height)).setText("Height: " + userEntity.getHeight());
         ((TextView)findViewById(R.id.welcom_gender)).setText("Gender:  " + userEntity.getGenderValue());
         return true;
@@ -666,11 +668,13 @@ public class Welcome extends AppCompatActivity
         ((TextView)findViewById(R.id.welcom_prev_date)).setText(lastDate);
         ((TextView)findViewById(R.id.welcom_kg_last)).setText(String.format("%s", paramsEntity.getWeight()));
         ((TextView)findViewById(R.id.welcom_fat_last)).setText(String.format("%s", paramsEntity.getFat()));
+        setFatColor(((TextView) findViewById(R.id.welcom_fat_last)), paramsEntity.getFat(), paramsEntity.getTdw());
         ((TextView)findViewById(R.id.welcom_tdw_last)).setText(String.format("%s", paramsEntity.getTdw()));
         ((TextView)findViewById(R.id.welcom_musculs_last)).setText(String.format("%s", paramsEntity.getMuscle()));
         ((TextView)findViewById(R.id.welcom_bones_last)).setText(String.format("%s", paramsEntity.getBones()));
         ((TextView)findViewById(R.id.welcom_kcal_last)).setText(String.format("%s", paramsEntity.getKcal()));
         ((TextView)findViewById(R.id.welcom_bmi_last)).setText(String.format("%s", paramsEntity.getBmi()));
+        setFatColor(((TextView) findViewById(R.id.welcom_bmi_last)), paramsEntity.getBmi());
     }
 
     private void setNewParameters(ParamsEntity paramsEntity) {
@@ -680,12 +684,89 @@ public class Welcome extends AppCompatActivity
                 + "." + (paramsEntity.getDate()/10000);
         ((TextView)findViewById(R.id.welcom_new_date)).setText(lastDate);
         ((TextView)findViewById(R.id.welcom_kg_new)).setText(String.format("%s", paramsEntity.getWeight()));
+        setFatColor(((TextView) findViewById(R.id.welcom_fat_new)), paramsEntity.getFat(), paramsEntity.getTdw());
         ((TextView)findViewById(R.id.welcom_fat_new)).setText(String.format("%s", paramsEntity.getFat()));
         ((TextView)findViewById(R.id.welcom_tdw_new)).setText(String.format("%s", paramsEntity.getTdw()));
         ((TextView)findViewById(R.id.welcom_musculs_new)).setText(String.format("%s", paramsEntity.getMuscle()));
         ((TextView)findViewById(R.id.welcom_bones_new)).setText(String.format("%s", paramsEntity.getBones()));
         ((TextView)findViewById(R.id.welcom_kcal_new)).setText(String.format("%s", paramsEntity.getKcal()));
         ((TextView)findViewById(R.id.welcom_bmi_new)).setText(String.format("%s", paramsEntity.getBmi()));
+        setFatColor(((TextView)findViewById(R.id.welcom_bmi_new)),paramsEntity.getBmi());
+    }
+
+    private void setFatColor(TextView viewById, float fat, float water) {
+        if (GlobalVars.getInstance().getGender() == 0 ) {   //for woman
+            if (GlobalVars.getInstance().getAge() <= 30) {
+                if (fat > 30.5 && water < 47) {
+                    viewById.setBackgroundColor(getResources().getColor(R.color.red));
+                } else if (fat > 25 && water < 51.5) {
+                    viewById.setBackgroundColor(getResources().getColor(R.color.orange));
+                } else if (fat > 20.5 && water < 54.6) {
+                    viewById.setBackgroundColor(getResources().getColor(R.color.green));
+                } else if (fat > 16 && water < 57.7) {
+                    viewById.setBackgroundColor(getResources().getColor(R.color.lite_blue));
+                } else if (fat > 4 && water < 66) {
+                    viewById.setBackgroundColor(getResources().getColor(R.color.blue));
+                }
+            } else {
+                if (fat > 35 && water < 44.6) {
+                    viewById.setBackgroundColor(getResources().getColor(R.color.red));
+                } else if (fat > 30 && water < 48) {
+                    viewById.setBackgroundColor(getResources().getColor(R.color.orange));
+                } else if (fat > 25 && water < 51.5) {
+                    viewById.setBackgroundColor(getResources().getColor(R.color.green));
+                } else if (fat > 20 && water < 54.9) {
+                    viewById.setBackgroundColor(getResources().getColor(R.color.lite_blue));
+                } else if (fat > 4 && water < 66) {
+                    viewById.setBackgroundColor(getResources().getColor(R.color.blue));
+                }
+            }
+        } else {                                            //for man
+            if (GlobalVars.getInstance().getAge() <= 30) {
+                if (fat > 24.6 && water < 51.8) {
+                    viewById.setBackgroundColor(getResources().getColor(R.color.red));
+                } else if (fat > 20.1 && water < 54.9) {
+                    viewById.setBackgroundColor(getResources().getColor(R.color.orange));
+                } else if (fat > 15.6 && water < 58.0) {
+                    viewById.setBackgroundColor(getResources().getColor(R.color.green));
+                } else if (fat > 11.1 && water < 61.1) {
+                    viewById.setBackgroundColor(getResources().getColor(R.color.lite_blue));
+                } else if (fat > 4 && water < 66) {
+                    viewById.setBackgroundColor(getResources().getColor(R.color.blue));
+                }
+            } else {
+                if (fat > 28.6 && water < 49.1) {
+                    viewById.setBackgroundColor(getResources().getColor(R.color.red));
+                } else if (fat > 24.1 && water < 52.3) {
+                    viewById.setBackgroundColor(getResources().getColor(R.color.orange));
+                } else if (fat > 19.6 && water < 58.2) {
+                    viewById.setBackgroundColor(getResources().getColor(R.color.green));
+                } else if (fat > 15.1 && water < 58.3) {
+                    viewById.setBackgroundColor(getResources().getColor(R.color.lite_blue));
+                } else if (fat > 4 && water < 66) {
+                    viewById.setBackgroundColor(getResources().getColor(R.color.blue));
+                }
+            }
+        }
+    }
+
+
+    private void setFatColor(TextView view, float fat) {
+        if (fat >= 40) {
+            view.setBackgroundColor(getResources().getColor(R.color.dark_red));
+        } else if (fat >= 35) {
+            view.setBackgroundColor(getResources().getColor(R.color.red));
+        } else if (fat >= 30) {
+            view.setBackgroundColor(getResources().getColor(R.color.orange));
+        } else if (fat >= 25) {
+            view.setBackgroundColor(getResources().getColor(R.color.yellow));
+        } else if (fat >= 18.5) {
+            view.setBackgroundColor(getResources().getColor(R.color.green));
+        } else if (fat >= 16) {
+            view.setBackgroundColor(getResources().getColor(R.color.lite_blue));
+        } else {
+            view.setBackgroundColor(getResources().getColor(R.color.blue));
+        }
     }
 
     private void setDeltaParams(ParamsEntity paramsEntity) {
