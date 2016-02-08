@@ -59,4 +59,13 @@ public class GlobalFunc {
         }
         view.setCompoundDrawablesWithIntrinsicBounds(leftDrawable, topDrawable, rightDrawable, bottomDrawable);
     }
+
+    public static String dateIntToString(int date) {
+        if (date == 0) {
+            return "undefined";
+        }
+        return (date%100) + "." +
+                ((date/100)%100 < 10?"0" + (date/100)%100:(date/100))
+                + "." + (date/10000);
+    }
 }

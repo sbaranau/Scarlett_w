@@ -338,7 +338,6 @@ public class DataBaseHelper extends SQLiteOpenHelper {
             cal.add(Calendar.DAY_OF_YEAR, 1);
             date = cal.get(Calendar.YEAR) * 10000 + (cal.get(Calendar.MONTH) + 1) * 100 +
                     cal.get(Calendar.DAY_OF_MONTH);
-
         }
         return dates;
     }

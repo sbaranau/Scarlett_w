@@ -19,6 +19,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.DatePicker;
@@ -233,7 +234,7 @@ public class Welcome extends AppCompatActivity
     }
 
     private boolean showParametersDialog(ParamsEntity paramsEntity, ArrayList<Integer> dates) {
-
+        int dateIndex = 0; // use for show date position in date list
         final LayoutInflater inflater = (Welcome.this).getLayoutInflater();
         View promptsView = inflater.inflate(R.layout.enter_params_dialog, null);
         AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(Welcome.this);
@@ -248,6 +249,10 @@ public class Welcome extends AppCompatActivity
         final DatePicker datePicker = (DatePicker) promptsView.findViewById(R.id.welcom_datePicker);
         final CheckBox setDateCheckBox = (CheckBox) promptsView.findViewById(R.id.welcom_change_date);
         final TextView showCurrentDate = ((TextView)promptsView.findViewById(R.id.welcom_show_date));
+
+        final Button prevButton = ((Button)promptsView.findViewById(R.id.prev_but));
+        final Button nextButton = ((Button)promptsView.findViewById(R.id.next_button));
+
         showCurrentDate.setText("Params for today");
         setDateCheckBox.setChecked(false);
 
@@ -288,7 +293,6 @@ public class Welcome extends AppCompatActivity
                     showCurrentDate.setVisibility(View.VISIBLE);
                     showCurrentDate.setText("Params for today");
                     finalParamsEntity.setDate(todaySql);
-
                 }
             }
         });
@@ -310,8 +314,16 @@ public class Welcome extends AppCompatActivity
                         finalParamsEntity.setDate(date);
                     }
                 });
-
-
+        if (dates == null || dates.size() == 0) {
+            prevButton.setVisibility(View.INVISIBLE);
+            nextButton.setVisibility(View.INVISIBLE);
+        } else {
+            // if user want to add missing values
+            setDateCheckBox.setVisibility(View.INVISIBLE);
+            alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setText("Add");
+            finalParamsEntity.setDate(dates.get(0));
+            showCurrentDate.setText(GlobalFunc.dateIntToString(dates.get(0)));
+        }
         alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -587,7 +599,7 @@ public class Welcome extends AppCompatActivity
         if (userEntity.getMissingDateReminder() == 0) {
             return;
         }
-        ArrayList<Integer> dates = (ArrayList<Integer>) dataBaseHelper.getEmptyDates(userEntity.getId());
+        final ArrayList<Integer> dates = (ArrayList<Integer>) dataBaseHelper.getEmptyDates(userEntity.getId());
         if (dates.size() == 0) {
             return;
         }
@@ -608,7 +620,7 @@ public class Welcome extends AppCompatActivity
                 .setPositiveButton("Ok",
                         new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int id) {
-
+                                showParametersDialog(null, dates);
                             }
                         });
 
@@ -695,10 +707,7 @@ public class Welcome extends AppCompatActivity
 
 
     private void setPreviousParameters(ParamsEntity paramsEntity) {
-        String lastDate = (paramsEntity.getDate()%100)
-                + "." + ((paramsEntity.getDate()/100)%100 < 10?"0"
-                +(paramsEntity.getDate()/100)%100:(paramsEntity.getDate()/100))
-                + "." + (paramsEntity.getDate()/10000);
+        String lastDate = (GlobalFunc.dateIntToString(paramsEntity.getDate()));
         ((TextView)findViewById(R.id.welcom_prev_date)).setText(lastDate);
         ((TextView)findViewById(R.id.welcom_kg_last)).setText(String.format("%s", paramsEntity.getWeight()));
         ((TextView)findViewById(R.id.welcom_fat_last)).setText(String.format("%s", paramsEntity.getFat()));
@@ -712,11 +721,8 @@ public class Welcome extends AppCompatActivity
     }
 
     private void setNewParameters(ParamsEntity paramsEntity) {
-        String lastDate = (paramsEntity.getDate()%100)
-                + "." + ((paramsEntity.getDate()/100)%100 < 10?"0"
-                +(paramsEntity.getDate()/100)%100:(paramsEntity.getDate()/100))
-                + "." + (paramsEntity.getDate()/10000);
-        ((TextView)findViewById(R.id.welcom_new_date)).setText(lastDate);
+        String lastDate = GlobalFunc.dateIntToString(paramsEntity.getDate());
+        ((TextView) findViewById(R.id.welcom_new_date)).setText(lastDate);
         ((TextView)findViewById(R.id.welcom_kg_new)).setText(String.format("%s", paramsEntity.getWeight()));
         setFatColor(((TextView) findViewById(R.id.welcom_fat_new)), paramsEntity.getFat(), paramsEntity.getTdw());
         ((TextView)findViewById(R.id.welcom_fat_new)).setText(String.format("%s", paramsEntity.getFat()));
