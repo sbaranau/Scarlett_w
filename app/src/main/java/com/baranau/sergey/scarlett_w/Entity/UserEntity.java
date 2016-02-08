@@ -9,6 +9,7 @@ public class UserEntity {
     private int age = 18;
     private int regDate = 0;
     private int height = 170;
+    private int missingDateReminder = 1; //1- remind about missing dates, 0 - don't remind
     private int gender = 0; // 0- female, 1 - man
 
     public int getRegDate() {
@@ -61,5 +62,13 @@ public class UserEntity {
 
     public void setGender(Integer gender) {
         this.gender = gender;
+    }
+
+    public int getMissingDateReminder() {
+        return missingDateReminder;
+    }
+
+    public void setMissingDateReminder(int missingDateReminder) {
+        this.missingDateReminder = missingDateReminder;
     }
 }

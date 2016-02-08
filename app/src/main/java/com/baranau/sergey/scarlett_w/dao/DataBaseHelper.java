@@ -25,7 +25,7 @@ import java.util.Locale;
 
 public class DataBaseHelper extends SQLiteOpenHelper {
 
-    private static final int BASE_VERSION = 5;
+    private static final int BASE_VERSION = 7;
 
     private static final String DATABASE_NAME = "scarlet_2216.db";
     private static final String USER_TABLE_NAME = "user";
@@ -35,6 +35,7 @@ public class DataBaseHelper extends SQLiteOpenHelper {
     private static final String USER_COLUMN_GENDER = "gender";
     private static final String USER_COLUMN_HEIGHT = "height";
     private static final String USER_COLUMN_REG_DATE = "reg_date";
+    private static final String USER_COLUMN_MISSING_REM = "missingrem";
 
     private static final String PARAMS_TABLE_NAME = "params";
     private static final String PARAMS_COLUMN_ID = "id";
@@ -79,6 +80,7 @@ public class DataBaseHelper extends SQLiteOpenHelper {
                             + USER_COLUMN_NAME + " text, "
                             + USER_COLUMN_AGE + " integer, "
                             + USER_COLUMN_GENDER + " integer, " // 1 for man, 2 for women
+                            + USER_COLUMN_MISSING_REM + " integer, " // for remind, 0 - don't remind
                             + USER_COLUMN_REG_DATE + " integer, "
                             + USER_COLUMN_HEIGHT + " integer) "
             );
@@ -109,6 +111,7 @@ public class DataBaseHelper extends SQLiteOpenHelper {
                     contentValues.put(USER_COLUMN_ID, userEntity.getId());
                     contentValues.put(USER_COLUMN_REG_DATE, userEntity.getId());
                     contentValues.put(USER_COLUMN_NAME, userEntity.getName());
+                    contentValues.put(USER_COLUMN_MISSING_REM, userEntity.getMissingDateReminder());
                     db.insert(USER_TABLE_NAME, null, contentValues);
                 } catch (Exception ex) {
                     Log.e("Insert UserEntity", "", ex);
@@ -220,6 +223,7 @@ public class DataBaseHelper extends SQLiteOpenHelper {
                         appEntity.setRegDate(app.getInt(app.getColumnIndex(USER_COLUMN_REG_DATE)));
                         appEntity.setGender(app.getInt(app.getColumnIndex(USER_COLUMN_GENDER)));
                         appEntity.setHeight(app.getInt(app.getColumnIndex(USER_COLUMN_HEIGHT)));
+                        appEntity.setMissingDateReminder(app.getInt(app.getColumnIndex(USER_COLUMN_MISSING_REM)));
                         tempUserList.add(appEntity);
                         app.moveToNext();
                     }
@@ -281,6 +285,7 @@ public class DataBaseHelper extends SQLiteOpenHelper {
             contentValues.put(USER_COLUMN_AGE, user.getAge());
             contentValues.put(USER_COLUMN_HEIGHT, user.getHeight());
             contentValues.put(USER_COLUMN_GENDER, user.getGender());
+            contentValues.put(USER_COLUMN_MISSING_REM, 1);
             contentValues.put(USER_COLUMN_NAME, user.getName());
             return db.insert(USER_TABLE_NAME, null, contentValues);
         } catch (Exception ex) {
@@ -302,6 +307,7 @@ public class DataBaseHelper extends SQLiteOpenHelper {
                     user.setAge(cursor.getInt(cursor.getColumnIndex(USER_COLUMN_AGE)));
                     user.setGender(cursor.getInt(cursor.getColumnIndex(USER_COLUMN_GENDER)));
                     user.setHeight(cursor.getInt(cursor.getColumnIndex(USER_COLUMN_HEIGHT)));
+                    user.setMissingDateReminder(cursor.getColumnIndex(USER_COLUMN_MISSING_REM));
                     cursor.moveToNext();
                 }
                 cursor.close();
@@ -312,6 +318,30 @@ public class DataBaseHelper extends SQLiteOpenHelper {
         return user;
     }
 
+    public List<Integer> getEmptyDates(long id) {
+        int firstDate = getFirstDate(id);
+        List<Integer> dates = new ArrayList<>();
+        Calendar cal = Calendar.getInstance();
+        int day = firstDate%100;
+        int month = (firstDate/100)%100;
+        int year = firstDate/10000;
+        cal.set(Calendar.DAY_OF_MONTH, day);
+        cal.set(Calendar.MONTH, month - 1);
+        cal.set(Calendar.YEAR, year);
+        int date = firstDate;
+        ParamsEntity paramsEntity;
+        while (date != todaySql) {
+            paramsEntity = getParamsByDate(id,date);
+            if (paramsEntity.getDate() == 0) {
+                dates.add(date);
+            }
+            cal.add(Calendar.DAY_OF_YEAR, 1);
+            date = cal.get(Calendar.YEAR) * 10000 + (cal.get(Calendar.MONTH) + 1) * 100 +
+                    cal.get(Calendar.DAY_OF_MONTH);
+
+        }
+        return dates;
+    }
 
     public boolean updateUser(UserEntity user) {
         try {
@@ -327,7 +357,9 @@ public class DataBaseHelper extends SQLiteOpenHelper {
             contentValues.put(USER_COLUMN_HEIGHT, user.getHeight());
             contentValues.put(USER_COLUMN_GENDER, user.getGender());
             contentValues.put(USER_COLUMN_NAME, user.getName());
-            return db.update(USER_TABLE_NAME, contentValues, USER_COLUMN_ID + " = ? ", new String[]{String.valueOf(user.getId())}) == 1;
+            contentValues.put(USER_COLUMN_MISSING_REM, user.getMissingDateReminder());
+            return db.update(USER_TABLE_NAME, contentValues, USER_COLUMN_ID + " = ? ",
+                    new String[]{String.valueOf(user.getId())}) == 1;
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -398,6 +430,25 @@ public class DataBaseHelper extends SQLiteOpenHelper {
         return paramsEntity;
     }
 
+    public int getFirstDate(long id) {
+            try {
+                SQLiteDatabase db = this.getReadableDatabase();
+                Cursor params = db.rawQuery("select * from " + PARAMS_TABLE_NAME + " where "
+                        + PARAMS_COLUMN_USEID + " = " + id + " and " + PARAMS_COLUMN_DATE
+                        + " order by " + PARAMS_COLUMN_DATE
+                        + " ASC", null);
+                if (params.getCount() > 0) {
+                    params.moveToFirst();
+                    if (!params.isAfterLast()) {
+                        return params.getInt(params.getColumnIndex(PARAMS_COLUMN_DATE));
+                    }
+                    params.close();
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        return 0;
+    }
 
     public boolean addParams(ParamsEntity paramsEntity) {
         long result;
@@ -431,293 +482,6 @@ public class DataBaseHelper extends SQLiteOpenHelper {
         }
         return result >= 1;
     }
-
-/*
-    public int updateUser(String user, String password) {
-        try {
-            SQLiteDatabase db = this.getReadableDatabase();
-            ContentValues contentValues = new ContentValues();
-            contentValues.put(SC_COLUMN_PASSWORD, password);
-            contentValues.put(SC_COLUMN_USER, user);
-            return db.update(SC_TABLE_NAME, contentValues, SC_COLUMN_ID + " = ? ", new String[]{String.valueOf("1")});
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-        return  0;
-    }
-
-    public int newUser(String user, String password) {
-        try {
-            SQLiteDatabase db = this.getReadableDatabase();
-            ContentValues contentValues = new ContentValues();
-            contentValues.put(SC_COLUMN_PASSWORD, password);
-            contentValues.put(SC_COLUMN_USER, user);
-            contentValues.put(SC_COLUMN_USER_FILMS, "");
-            contentValues.put(SC_COLUMN_NEWFILM, "");
-            contentValues.put(SC_COLUMN_CUSTOMER_ID, "");
-            contentValues.put(SC_COLUMN_CUSTOMER_CARD, "");
-            return db.update(SC_TABLE_NAME, contentValues, SC_COLUMN_ID + " = ? ", new String[]{String.valueOf("1")});
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-        return  0;
-    }
-
-    public int updateUserFilms(String films) {
-        try {
-            SQLiteDatabase db = this.getReadableDatabase();
-            ContentValues contentValues = new ContentValues();
-            contentValues.put(SC_COLUMN_USER_FILMS, films);
-            return db.update(SC_TABLE_NAME, contentValues, SC_COLUMN_ID + " = ? ", new String[]{String.valueOf("1")});
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-        return  0;
-    }
-
-    public int updateNewFilm(String film) {
-        try {
-            SQLiteDatabase db = this.getReadableDatabase();
-            ContentValues contentValues = new ContentValues();
-            contentValues.put(SC_COLUMN_NEWFILM, film);
-            return db.update(SC_TABLE_NAME, contentValues, SC_COLUMN_ID + " = ? ", new String[]{String.valueOf("1")});
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-        return  0;
-    }
-    public int updateToken(String token) {
-        try {
-            SQLiteDatabase db = this.getReadableDatabase();
-            ContentValues contentValues = new ContentValues();
-            contentValues.put(SC_COLUMN_TOKEN, token);
-            return db.update(SC_TABLE_NAME, contentValues, SC_COLUMN_ID + " = ? ", new String[]{String.valueOf("1")});
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-        return  0;
-    }
-
-    public int updateStoriedId(String storied_id) {
-        try {
-            SQLiteDatabase db = this.getReadableDatabase();
-            ContentValues contentValues = new ContentValues();
-            contentValues.put(SC_COLUMN_STORE_ID, storied_id);
-            return db.update(SC_TABLE_NAME, contentValues, SC_COLUMN_ID + " = ? ", new String[]{String.valueOf("1")});
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-        return  0;
-    }
-
-    public int updateCustomerCard(String card) {
-        try {
-            SQLiteDatabase db = this.getReadableDatabase();
-            ContentValues contentValues = new ContentValues();
-            contentValues.put(SC_COLUMN_CUSTOMER_CARD, card);
-            return db.update(SC_TABLE_NAME, contentValues, SC_COLUMN_ID + " = ? ", new String[]{String.valueOf("1")});
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-        return  0;
-    }
-
-    public int updateCustomer_Id(String customer_id) {
-        try {
-            SQLiteDatabase db = this.getReadableDatabase();
-            ContentValues contentValues = new ContentValues();
-            contentValues.put(SC_COLUMN_TOKEN, customer_id);
-            return db.update(SC_TABLE_NAME, contentValues, SC_COLUMN_ID + " = ? ", new String[]{String.valueOf("1")});
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-        return  0;
-    }
-
-    public int setAutoLogin() {
-        try {
-            SQLiteDatabase db = this.getReadableDatabase();
-            ContentValues contentValues = new ContentValues();
-            contentValues.put(SC_COLUMN_AUTOLOGIN, "1");
-            return db.update(SC_TABLE_NAME, contentValues, SC_COLUMN_ID + " = ? ", new String[]{String.valueOf("1")});
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-        return  0;
-    }
-
-    public int cancelAutoLogin() {
-        try {
-            SQLiteDatabase db = this.getReadableDatabase();
-            ContentValues contentValues = new ContentValues();
-            contentValues.put(SC_COLUMN_AUTOLOGIN, "0");
-            return db.update(SC_TABLE_NAME, contentValues, SC_COLUMN_ID + " = ? ", new String[]{String.valueOf("1")});
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-        return  0;
-    }
-
-
-
-
-    public String getUserName() {
-        String user = "";
-        try {
-            SQLiteDatabase db = this.getReadableDatabase();
-            Cursor c = db.rawQuery("select " + SC_COLUMN_USER +  " from " + SC_TABLE_NAME + " where " + SC_COLUMN_ID + " = 1", null );
-            if (c.getCount() > 0) {
-                c.moveToFirst();
-                while (!c.isAfterLast()) {
-                    user = c.getString(0);
-                    c.moveToNext();
-                }
-                c.close();
-            }
-        } catch (Exception ex) {
-            return "";
-        }
-        return user==null?"":user;
-
-    }
-    public String getNewFilm() {
-        String film = "";
-        try {
-            SQLiteDatabase db = this.getReadableDatabase();
-            Cursor c = db.rawQuery("select " + SC_COLUMN_NEWFILM + " from " + SC_TABLE_NAME + " where " + SC_COLUMN_ID + " = 1", null );
-            if (c.getCount() > 0) {
-                c.moveToFirst();
-                while (!c.isAfterLast()) {
-                    film = c.getString(0);
-                    c.moveToNext();
-                }
-                c.close();
-            }
-        } catch (Exception ex) {
-            return "";
-        }
-        return film==null?"":film;
-
-    }
-
-    public String getUserFilms() {
-        String films = "";
-        try {
-            SQLiteDatabase db = this.getReadableDatabase();
-            Cursor c = db.rawQuery("select " + SC_COLUMN_USER_FILMS + " from " + SC_TABLE_NAME + " where " + SC_COLUMN_ID + " = 1", null );
-            if (c.getCount() > 0) {
-                c.moveToFirst();
-                while (!c.isAfterLast()) {
-                    films = c.getString(0);
-                    c.moveToNext();
-                }
-                c.close();
-            }
-        } catch (Exception ex) {
-            return "";
-        }
-        return films==null?"":films;
-
-    }
-
-    public String getToken() {
-        String token = "";
-        try {
-            SQLiteDatabase db = this.getReadableDatabase();
-            Cursor c = db.rawQuery("select " + SC_COLUMN_TOKEN + " from " + SC_TABLE_NAME + " where " + SC_COLUMN_ID + " = 1", null );
-            if (c.getCount() > 0) {
-                c.moveToFirst();
-                while (!c.isAfterLast()) {
-                    token = c.getString(0);
-                    c.moveToNext();
-                }
-                c.close();
-            }
-        } catch (Exception ex) {
-            return "";
-        }
-        return token==null?"":token;
-
-    }
-
-    public String getCustomerId() {
-        String customerId = "";
-        try {
-            SQLiteDatabase db = this.getReadableDatabase();
-            Cursor c = db.rawQuery("select " + SC_COLUMN_CUSTOMER_ID + " from " + SC_TABLE_NAME + " where " + SC_COLUMN_ID + " = 1", null );
-            if (c.getCount() > 0) {
-                c.moveToFirst();
-                while (!c.isAfterLast()) {
-                    customerId = c.getString(0);
-                    c.moveToNext();
-                }
-                c.close();
-            }
-        } catch (Exception ex) {
-            return "";
-        }
-        return customerId==null?"":customerId;
-
-    }
-
-    public boolean getAutoLogin() {
-        String autologin = "";
-        try {
-            SQLiteDatabase db = this.getReadableDatabase();
-            Cursor c = db.rawQuery("select " + SC_COLUMN_AUTOLOGIN + " from " + SC_TABLE_NAME + " where " + SC_COLUMN_ID + " = 1", null );
-            if (c.getCount() > 0) {
-                c.moveToFirst();
-                while (!c.isAfterLast()) {
-                    autologin = c.getString(0);
-                    c.moveToNext();
-                }
-                c.close();
-            }
-        } catch (Exception ex) {
-            return false;
-        }
-        return "1".equals(autologin.trim());
-    }
-
-    public String getStoriedId() {
-        String storiedId = "";
-        try {
-            SQLiteDatabase db = this.getReadableDatabase();
-            Cursor c = db.rawQuery("select " + SC_COLUMN_STORE_ID + " from " + SC_TABLE_NAME + " where " + SC_COLUMN_ID + " = 1", null );
-            if (c.getCount() > 0) {
-                c.moveToFirst();
-                while (!c.isAfterLast()) {
-                    storiedId = c.getString(0);
-                    c.moveToNext();
-                }
-                c.close();
-            }
-        } catch (Exception ex) {
-            return "";
-        }
-        return storiedId==null?"":storiedId;
-
-    }
-
-    public String getCustomerCard() {
-        String card = "";
-        try {
-            SQLiteDatabase db = this.getReadableDatabase();
-            Cursor c = db.rawQuery("select " + SC_COLUMN_CUSTOMER_CARD + " from " + SC_TABLE_NAME + " where " + SC_COLUMN_ID + " = 1", null );
-            if (c.getCount() > 0) {
-                c.moveToFirst();
-                while (!c.isAfterLast()) {
-                    card = c.getString(0);
-                    c.moveToNext();
-                }
-                c.close();
-            }
-        } catch (Exception ex) {
-            return "";
-        }
-        return card==null?"":card;
-
-    }*/
 
 }
 

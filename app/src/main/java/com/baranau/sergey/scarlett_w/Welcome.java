@@ -35,6 +35,7 @@ import com.baranau.sergey.scarlett_w.Global.GlobalVars;
 import com.baranau.sergey.scarlett_w.dao.DataBaseHelper;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
@@ -136,7 +137,7 @@ public class Welcome extends AppCompatActivity
             @Override
             public void onClick(View view) {
                 /*Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();*/http://baraholka.onliner.by/viewtopic.php?t=16950848
+                        .setAction("Action", null).show();*/
                 if (todayParamsEntity == null || todayParamsEntity.getDate() == 0) {
                     todayParamsEntity = dataBaseHelper.getLastParams(GlobalVars.getInstance().getId());
                 }
@@ -154,12 +155,12 @@ public class Welcome extends AppCompatActivity
                     builder.setPositiveButton("Yes, I want", new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
-                            showParametersDialog(todayParamsEntity);
+                            showParametersDialog(todayParamsEntity, new ArrayList<Integer>());
                         }
                     });
                     builder.create().show();
                 } else {
-                    showParametersDialog(null);
+                    showParametersDialog(null, new ArrayList<Integer>());
                 }
 
 
@@ -231,7 +232,7 @@ public class Welcome extends AppCompatActivity
         return true;
     }
 
-    private boolean showParametersDialog(ParamsEntity paramsEntity) {
+    private boolean showParametersDialog(ParamsEntity paramsEntity, ArrayList<Integer> dates) {
 
         final LayoutInflater inflater = (Welcome.this).getLayoutInflater();
         View promptsView = inflater.inflate(R.layout.enter_params_dialog, null);
@@ -250,20 +251,18 @@ public class Welcome extends AppCompatActivity
         showCurrentDate.setText("Params for today");
         setDateCheckBox.setChecked(false);
 
-
-
         datePicker.setVisibility(View.INVISIBLE);
         if (paramsEntity == null || paramsEntity.getWeight() == 0) {
             paramsEntity = new ParamsEntity();
             paramsEntity.setDate(todaySql);
         } else {
-            kg.setText(paramsEntity.getWeight() + "");
-            fat.setText(paramsEntity.getFat() + "");
-            tdw.setText(paramsEntity.getTdw() + "");
-            muscle.setText(paramsEntity.getMuscle() + "");
-            bones.setText(paramsEntity.getBones() + "");
-            bmi.setText(paramsEntity.getBmi() + "");
-            kcal.setText(paramsEntity.getKcal() + "");
+            kg.setText(String.format("%s", paramsEntity.getWeight()));
+            fat.setText(String.format("%s", paramsEntity.getFat()));
+            tdw.setText(String.format("%s", paramsEntity.getTdw()));
+            muscle.setText(String.format("%s", paramsEntity.getMuscle()));
+            bones.setText(String.format("%s", paramsEntity.getBones()));
+            bmi.setText(String.format("%s", paramsEntity.getBmi()));
+            kcal.setText(String.format("%s", paramsEntity.getKcal()));
         }
         alertDialogBuilder
                 .setCancelable(false)
@@ -300,13 +299,13 @@ public class Welcome extends AppCompatActivity
                         int date = year * 10000 + (monthOfYear + 1) * 100 + dayOfMonth;
                         ParamsEntity oldParamsEntity = dataBaseHelper.getParamsByDate(GlobalVars.getInstance().getId(), date);
                         if (oldParamsEntity.getDate() > 0 || oldParamsEntity.getWeight() == 0) {
-                            kg.setText(oldParamsEntity.getWeight() + "");
-                            fat.setText(oldParamsEntity.getFat() + "");
-                            tdw.setText(oldParamsEntity.getTdw() + "");
-                            muscle.setText(oldParamsEntity.getMuscle() + "");
-                            bones.setText(oldParamsEntity.getBones() + "");
-                            bmi.setText(oldParamsEntity.getBmi() + "");
-                            kcal.setText(oldParamsEntity.getKcal() + "");
+                            kg.setText(String.format("%s", oldParamsEntity.getWeight()));
+                            fat.setText(String.format("%s", oldParamsEntity.getFat()));
+                            tdw.setText(String.format("%s", oldParamsEntity.getTdw()));
+                            muscle.setText(String.format("%s", oldParamsEntity.getMuscle()));
+                            bones.setText(String.format("%s", oldParamsEntity.getBones()));
+                            bmi.setText(String.format("%s", oldParamsEntity.getBmi()));
+                            kcal.setText(String.format("%s", oldParamsEntity.getKcal()));
                         }
                         finalParamsEntity.setDate(date);
                     }
@@ -516,7 +515,7 @@ public class Welcome extends AppCompatActivity
         for (int i = 1; i < 90; i++) {
             ages[ i-1 ] = i;
         }
-        ArrayAdapter adapter = new ArrayAdapter<Integer>(Welcome.this,
+        ArrayAdapter adapter = new ArrayAdapter<>(Welcome.this,
                 android.R.layout.simple_spinner_dropdown_item, ages);
         userAge.setAdapter(adapter);
         if (userEntity == null) {
@@ -583,21 +582,56 @@ public class Welcome extends AppCompatActivity
         return true;
     }
 
+    private void showMissingDatesDialog(final UserEntity userEntity) {
+
+        if (userEntity.getMissingDateReminder() == 0) {
+            return;
+        }
+        ArrayList<Integer> dates = (ArrayList<Integer>) dataBaseHelper.getEmptyDates(userEntity.getId());
+        if (dates.size() == 0) {
+            return;
+        }
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(Welcome.this);
+        alertDialogBuilder
+                .setCancelable(false)
+                .setTitle(userEntity.getName())
+                .setMessage("I've found that You forgot to enter weighting " +
+                        "parameters for some dates. May be You enter them now?")
+                .setNegativeButton("Later", null)
+                .setNeutralButton("Don't show", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        userEntity.setMissingDateReminder(0);
+                        dataBaseHelper.updateUser(userEntity);
+                    }
+                })
+                .setPositiveButton("Ok",
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int id) {
+
+                            }
+                        });
+
+        AlertDialog alertDialog = alertDialogBuilder.create();
+        alertDialog.show();
+    }
+
+
     private boolean updateTitleInfo() {
-        ((TextView)findViewById(R.id.welcom_user_hello)).setText("Welcome " + GlobalVars.getInstance().getName());
+        ((TextView)findViewById(R.id.welcom_user_hello)).setText(String.format("Welcome %s", GlobalVars.getInstance().getName()));
         UserEntity userEntity = dataBaseHelper.getUser(GlobalVars.getInstance().getId());
+        showMissingDatesDialog(userEntity);
         GlobalVars.getInstance().setAge(userEntity.getAge());
         GlobalVars.getInstance().setGender(userEntity.getGender());
-                ((TextView) findViewById(R.id.welcom_age)).setText("Your age: " + userEntity.getAge());
-        ((TextView)findViewById(R.id.welcom_height)).setText("Height: " + userEntity.getHeight());
-        ((TextView)findViewById(R.id.welcom_gender)).setText("Gender:  " + userEntity.getGenderValue());
+                ((TextView) findViewById(R.id.welcom_age)).setText(String.format("Your age: %d", userEntity.getAge()));
+        ((TextView)findViewById(R.id.welcom_height)).setText(String.format("Height: %d", userEntity.getHeight()));
+        ((TextView)findViewById(R.id.welcom_gender)).setText(String.format("Gender:  %s", userEntity.getGenderValue()));
         return true;
     }
 
     private void updateParameters() {
         previousParamsEntity = dataBaseHelper.getLastParams(GlobalVars.getInstance().getId());
         todayParamsEntity = dataBaseHelper.getParamsByDate(GlobalVars.getInstance().getId(), todaySql);
-        String lastDate;
         if (previousParamsEntity.getDate() > 0 && todayParamsEntity.getDate() > 0) {
             findViewById(R.id.welcom_delta).setVisibility(View.VISIBLE);
             findViewById(R.id.welcom_new_date).setVisibility(View.VISIBLE);
