@@ -5,24 +5,24 @@ import android.content.DialogInterface;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
-import android.text.SpannableStringBuilder;
-import android.text.style.ImageSpan;
-import android.view.LayoutInflater;
-import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.SpannableStringBuilder;
+import android.text.style.ImageSpan;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CalendarView;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
-import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.RadioButton;
 import android.widget.Spinner;
@@ -40,6 +40,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
+import java.util.TimeZone;
+
 
 public class Welcome extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
@@ -49,12 +51,14 @@ public class Welcome extends AppCompatActivity
     private ParamsEntity todayParamsEntity = new ParamsEntity();
     private ParamsEntity deltaParamsEntity = new ParamsEntity();
     private SimpleDateFormat formatterForInt = new SimpleDateFormat("yyyyMMdd", Locale.getDefault());
+
     private int todaySql = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         try {
+            formatterForInt.setTimeZone(TimeZone.getTimeZone("UTC"));
             todaySql = Integer.parseInt(formatterForInt.format(new Date()));
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -64,7 +68,7 @@ public class Welcome extends AppCompatActivity
         setSupportActionBar(toolbar);
         dataBaseHelper = DataBaseHelper.getDataBaseHelper(Welcome.this);
 
-        dataBaseHelper.deleteAllParams();
+        dataBaseHelper.addTestParams(2);
 
         final HashMap<Integer, String> user = dataBaseHelper.getUsersNames();
         SimpleDateFormat df = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
@@ -95,7 +99,7 @@ public class Welcome extends AppCompatActivity
                         if (user.get(key).equals(names[which])) {
                             GlobalVars.getInstance().setId(key);
                             dialog.cancel();
-                            updateTitleInfo();
+                            updateTitleInfo(true);
                             updateParameters();
                             break;
                         }
@@ -120,7 +124,7 @@ public class Welcome extends AppCompatActivity
                     dataBaseHelper.deleteAllParams();
                     dataBaseHelper.addTestParams(GlobalVars.getInstance().getId());
                     dialog.cancel();
-                    updateTitleInfo();
+                    updateTitleInfo(true);
                     updateParameters();
                 }
             });
@@ -233,8 +237,8 @@ public class Welcome extends AppCompatActivity
         return true;
     }
 
-    private boolean showParametersDialog(ParamsEntity paramsEntity, ArrayList<Integer> dates) {
-        int dateIndex = 0; // use for show date position in date list
+    private boolean showParametersDialog(ParamsEntity paramsEntity, final ArrayList<Integer> dates) {
+        final int[] dateIndex = {0}; // use for show date position in date list
         final LayoutInflater inflater = (Welcome.this).getLayoutInflater();
         View promptsView = inflater.inflate(R.layout.enter_params_dialog, null);
         AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(Welcome.this);
@@ -246,7 +250,7 @@ public class Welcome extends AppCompatActivity
         final EditText bones = (EditText) promptsView.findViewById(R.id.bones);
         final EditText kcal = (EditText) promptsView.findViewById(R.id.kcal);
         final EditText bmi = (EditText) promptsView.findViewById(R.id.bmi);
-        final DatePicker datePicker = (DatePicker) promptsView.findViewById(R.id.welcom_datePicker);
+        final CalendarView datePicker = (CalendarView) promptsView.findViewById(R.id.welcom_calendar);
         final CheckBox setDateCheckBox = (CheckBox) promptsView.findViewById(R.id.welcom_change_date);
         final TextView showCurrentDate = ((TextView)promptsView.findViewById(R.id.welcom_show_date));
 
@@ -296,31 +300,153 @@ public class Welcome extends AppCompatActivity
                 }
             }
         });
-        datePicker.init((paramsEntity.getDate() / 10000), (paramsEntity.getDate() / 100) % 100 - 1, paramsEntity.getDate() % 100,
-                new DatePicker.OnDateChangedListener() {
-                    @Override
-                    public void onDateChanged(DatePicker view, int year, int monthOfYear, int dayOfMonth) {
-                        int date = year * 10000 + (monthOfYear + 1) * 100 + dayOfMonth;
-                        ParamsEntity oldParamsEntity = dataBaseHelper.getParamsByDate(GlobalVars.getInstance().getId(), date);
-                        if (oldParamsEntity.getDate() > 0 || oldParamsEntity.getWeight() == 0) {
-                            kg.setText(String.format("%s", oldParamsEntity.getWeight()));
-                            fat.setText(String.format("%s", oldParamsEntity.getFat()));
-                            tdw.setText(String.format("%s", oldParamsEntity.getTdw()));
-                            muscle.setText(String.format("%s", oldParamsEntity.getMuscle()));
-                            bones.setText(String.format("%s", oldParamsEntity.getBones()));
-                            bmi.setText(String.format("%s", oldParamsEntity.getBmi()));
-                            kcal.setText(String.format("%s", oldParamsEntity.getKcal()));
-                        }
-                        finalParamsEntity.setDate(date);
+        if (dates.size() == 1) {
+            nextButton.setEnabled(false);
+            prevButton.setEnabled(false);
+        }
+        nextButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (kg.getText().length() > 0
+                        || bmi.getText().length() > 0
+                        || tdw.getText().length() > 0
+                        || bones.getText().length() > 0
+                        || muscle.getText().length() > 0
+                        || fat.getText().length() > 0
+                        || kcal.getText().length() > 0) {
+                    try {
+                        AlertDialog.Builder confirmDialog = new AlertDialog.Builder(Welcome.this);
+                        confirmDialog.setCancelable(false);
+                        confirmDialog.setTitle("Warning!!!");
+                        confirmDialog.setMessage("If You change date You will lost all unsaved parameters" +
+                                " for date: "
+                                + GlobalFunc.dateIntToString(dates.get(dateIndex[0])));
+                        confirmDialog.setPositiveButton("Ok", null);
+                        confirmDialog.setNegativeButton("Cancel", null);
+                        final AlertDialog alertDialog1 = confirmDialog.create();
+                        alertDialog1.show();
+                        alertDialog1.getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                kg.setText("");
+                                fat.setText("");
+                                tdw.setText("");
+                                muscle.setText("");
+                                bones.setText("");
+                                kcal.setText("");
+                                bmi.setText("");
+                                if (dateIndex[0] != dates.size() - 1) {
+                                    dateIndex[0]++;
+                                    prevButton.setEnabled(true);
+                                    showCurrentDate.setText(GlobalFunc.dateIntToString(dates.get(dateIndex[0])));
+                                    finalParamsEntity.setDate(dates.get(dateIndex[0]));
+                                } else {
+                                    nextButton.setEnabled(false);
+                                }
+                                alertDialog1.cancel();
+                                alertDialog1.dismiss();
+                            }
+                        });
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
                     }
-                });
-        if (dates == null || dates.size() == 0) {
+                } else {
+                    if (dateIndex[0] != dates.size() - 1) {
+                        dateIndex[0]++;
+                        prevButton.setEnabled(true);
+                        showCurrentDate.setText(GlobalFunc.dateIntToString(dates.get(dateIndex[0])));
+                        finalParamsEntity.setDate(dates.get(dateIndex[0]));
+                    } else {
+                        nextButton.setEnabled(false);
+                    }
+                }
+            }
+        });
+        prevButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (kg.getText().length() > 0
+                        || bmi.getText().length() > 0
+                        || tdw.getText().length() > 0
+                        || bones.getText().length() > 0
+                        || muscle.getText().length() > 0
+                        || fat.getText().length() > 0
+                        || kcal.getText().length() > 0) {
+                    AlertDialog.Builder confirmDialog = new AlertDialog.Builder(Welcome.this);
+                    confirmDialog.setTitle("Warning!!!");
+                    confirmDialog.setMessage("If You change date You will lost all unsaved parameters" +
+                            " for date: "
+                            + GlobalFunc.dateIntToString(dates.get(dateIndex[0])));
+                    confirmDialog.setPositiveButton("Ok", null);
+                    confirmDialog.setNegativeButton("Cancel", null);
+                    final AlertDialog alertDialog1 = confirmDialog.create();
+                    alertDialog1.show();
+                    alertDialog1.getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            kg.setText("");
+                            fat.setText("");
+                            tdw.setText("");
+                            muscle.setText("");
+                            bones.setText("");
+                            kcal.setText("");
+                            bmi.setText("");
+                            if (dateIndex[0] != 0) {
+                                nextButton.setEnabled(true);
+                                dateIndex[0]--;
+                                showCurrentDate.setText(GlobalFunc.dateIntToString(dates.get(dateIndex[0])));
+                                finalParamsEntity.setDate(dates.get(dateIndex[0]));
+                            } else {
+                                prevButton.setEnabled(false);
+                            }
+                            alertDialog1.cancel();
+                            alertDialog1.dismiss();
+                        }
+                    });
+                    alertDialog1.show();
+                } else {
+                    if (dateIndex[0] != 0) {
+                        nextButton.setEnabled(true);
+                        dateIndex[0]--;
+                        showCurrentDate.setText(GlobalFunc.dateIntToString(dates.get(dateIndex[0])));
+                        finalParamsEntity.setDate(dates.get(dateIndex[0]));
+                    } else {
+                        prevButton.setEnabled(false);
+                    }
+                }
+
+
+            }
+        });
+        prevButton.setEnabled(false);
+        datePicker.setOnDateChangeListener(new CalendarView.OnDateChangeListener() {
+            @Override
+            public void onSelectedDayChange(CalendarView view, int year, int month, int dayOfMonth) {
+                int date = year * 10000 + (month + 1) * 100 + dayOfMonth;
+                ParamsEntity oldParamsEntity = dataBaseHelper.getParamsByDate(GlobalVars.getInstance().getId(), date);
+                if (oldParamsEntity.getDate() > 0 || oldParamsEntity.getWeight() == 0) {
+                    kg.setText(String.format("%s", oldParamsEntity.getWeight()));
+                    fat.setText(String.format("%s", oldParamsEntity.getFat()));
+                    tdw.setText(String.format("%s", oldParamsEntity.getTdw()));
+                    muscle.setText(String.format("%s", oldParamsEntity.getMuscle()));
+                    bones.setText(String.format("%s", oldParamsEntity.getBones()));
+                    bmi.setText(String.format("%s", oldParamsEntity.getBmi()));
+                    kcal.setText(String.format("%s", oldParamsEntity.getKcal()));
+                }
+                finalParamsEntity.setDate(date);
+            }
+
+
+        });
+
+        datePicker.setMaxDate(new Date().getTime());
+        if (dates.size() == 0) {
             prevButton.setVisibility(View.INVISIBLE);
             nextButton.setVisibility(View.INVISIBLE);
         } else {
             // if user want to add missing values
             setDateCheckBox.setVisibility(View.INVISIBLE);
-            alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setText("Add");
+            alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setText("Save");
             finalParamsEntity.setDate(dates.get(0));
             showCurrentDate.setText(GlobalFunc.dateIntToString(dates.get(0)));
         }
@@ -444,11 +570,36 @@ public class Welcome extends AppCompatActivity
                     isOk = false;
                 }
                 if (isOk) {
+
                     if (dataBaseHelper.addParams(finalParamsEntity)) {
-                        alertDialog.dismiss();
+                        kg.setText("");
+                        fat.setText("");
+                        tdw.setText("");
+                        muscle.setText("");
+                        bones.setText("");
+                        kcal.setText("");
+                        bmi.setText("");
+                        if (dates.size() <= 1) {
+                            alertDialog.dismiss();
+                        } else {
+                            if (dates.size() > 1 && dateIndex[0] == dates.size() - 1) {
+                                prevButton.callOnClick();
+                            } else {
+                                showCurrentDate.setText(GlobalFunc.dateIntToString(dates.get(dateIndex[0] + 1)));
+                            }
+                            dates.remove(dateIndex[0]);
+                            if (dateIndex[0] == dates.size() - 1) {
+                                nextButton.setEnabled(false);
+                            } else if (dateIndex[0] == 0) {
+                                prevButton.setEnabled(false);
+                            } else {
+                                nextButton.setEnabled(true);
+                                prevButton.setEnabled(true);
+                            }
+                        }
                         AlertDialog.Builder builder = new AlertDialog.Builder(Welcome.this);
                         builder.setTitle(R.string.congratulations);
-                        updateTitleInfo();
+                        updateTitleInfo(false);
                         updateParameters();
                         SpannableStringBuilder messageBuilder = new SpannableStringBuilder();
                         if (previousParamsEntity == null || previousParamsEntity.getWeight() == 0
@@ -483,13 +634,13 @@ public class Welcome extends AppCompatActivity
                                 }
 
                             } else {
-                                builder.setTitle(" Saved");
+                                builder.setTitle("Ops");
                                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                                    messageBuilder.append("")
+                                    messageBuilder.append("Somebody eats cakes at night?")
                                             .append(" ", new ImageSpan(Welcome.this, Emotions.getSmileyResource(Emotions.CAT_CONFUSED)), 0)
                                             .append(" ");
                                 } else {
-                                    messageBuilder.append("").append(" ");
+                                    messageBuilder.append("Somebody eats cakes at night?").append(" ");
                                     messageBuilder.setSpan(new ImageSpan(Welcome.this, Emotions.getSmileyResource(Emotions.CAT_CONFUSED)),
                                             messageBuilder.length() - 1, messageBuilder.length(), 0);
                                     messageBuilder.append(" ");
@@ -584,7 +735,7 @@ public class Welcome extends AppCompatActivity
                                     dataBaseHelper.updateUser(finalUserEntity);
                                 }
                                 GlobalVars.getInstance().setName(userName.getText().toString().trim());
-                                updateTitleInfo();
+                                updateTitleInfo(false);
                             }
                         }
                     });
@@ -629,10 +780,12 @@ public class Welcome extends AppCompatActivity
     }
 
 
-    private boolean updateTitleInfo() {
+    private boolean updateTitleInfo(boolean showReminder) {
         ((TextView)findViewById(R.id.welcom_user_hello)).setText(String.format("Welcome %s", GlobalVars.getInstance().getName()));
         UserEntity userEntity = dataBaseHelper.getUser(GlobalVars.getInstance().getId());
-        showMissingDatesDialog(userEntity);
+        if (showReminder) {
+            showMissingDatesDialog(userEntity);
+        }
         GlobalVars.getInstance().setAge(userEntity.getAge());
         GlobalVars.getInstance().setGender(userEntity.getGender());
                 ((TextView) findViewById(R.id.welcom_age)).setText(String.format("Your age: %d", userEntity.getAge()));
@@ -814,52 +967,52 @@ public class Welcome extends AppCompatActivity
         ((TextView)findViewById(R.id.welcom_kg_delta)).setText(String.format("%s", paramsEntity.getWeight()));
         if (paramsEntity.getWeight() > 1) {
             GlobalFunc.addScaledImage(Welcome.this, ((TextView) findViewById(R.id.welcom_kg_delta)),
-                    Emotions.getSmileyResource(Emotions.VERY_VERY_SAD), 0, 0, 0);
+                    0, 0, Emotions.getSmileyResource(Emotions.VERY_VERY_SAD), 0);
         } else if (paramsEntity.getWeight() > 0.5) {
             GlobalFunc.addScaledImage(Welcome.this, ((TextView) findViewById(R.id.welcom_kg_delta)),
-                    Emotions.getSmileyResource(Emotions.VERY_SAD), 0, 0, 0);
+                    0, 0, Emotions.getSmileyResource(Emotions.VERY_SAD), 0);
         } else if (paramsEntity.getWeight() > 0) {
             GlobalFunc.addScaledImage(Welcome.this, ((TextView) findViewById(R.id.welcom_kg_delta)),
-                    Emotions.getSmileyResource(Emotions.SAD), 0, 0, 0);
+                    0, 0, Emotions.getSmileyResource(Emotions.SAD), 0);
         } else if (paramsEntity.getWeight() == 0) {
             GlobalFunc.addScaledImage(Welcome.this, ((TextView) findViewById(R.id.welcom_kg_delta)),
-                    Emotions.getSmileyResource(Emotions.NORMAL), 0, 0, 0);
+                    0, 0, Emotions.getSmileyResource(Emotions.NORMAL), 0);
         } else if (paramsEntity.getWeight() < 0) {
             GlobalFunc.addScaledImage(Welcome.this, ((TextView)findViewById(R.id.welcom_kg_delta)),
-                    Emotions.getSmileyResource(Emotions.HAPPY), 0, 0, 0);
+                    0, 0, Emotions.getSmileyResource(Emotions.HAPPY), 0);
         }
         ((TextView)findViewById(R.id.welcom_fat_delta)).setText(String.format("%s", paramsEntity.getFat()));
         if (paramsEntity.getFat() > 1) {
             GlobalFunc.addScaledImage(Welcome.this, ((TextView) findViewById(R.id.welcom_fat_delta)),
-                    Emotions.getSmileyResource(Emotions.VERY_VERY_SAD), 0, 0, 0);
+                    0, 0, Emotions.getSmileyResource(Emotions.VERY_VERY_SAD), 0);
         } else if (paramsEntity.getFat() > 0.5) {
             GlobalFunc.addScaledImage(Welcome.this, ((TextView) findViewById(R.id.welcom_fat_delta)),
-                    Emotions.getSmileyResource(Emotions.VERY_SAD), 0, 0, 0);
+                    0, 0, Emotions.getSmileyResource(Emotions.VERY_SAD), 0);
         } else if (paramsEntity.getFat() > 0) {
             GlobalFunc.addScaledImage(Welcome.this, ((TextView) findViewById(R.id.welcom_fat_delta)),
-                    Emotions.getSmileyResource(Emotions.SAD), 0, 0, 0);
+                    0, 0, Emotions.getSmileyResource(Emotions.SAD), 0);
         } else if (paramsEntity.getFat() == 0) {
             GlobalFunc.addScaledImage(Welcome.this, ((TextView) findViewById(R.id.welcom_fat_delta)),
-                    Emotions.getSmileyResource(Emotions.NORMAL), 0, 0, 0);
+                    0, 0, Emotions.getSmileyResource(Emotions.NORMAL), 0);
         } else if (paramsEntity.getFat() < 0) {
             GlobalFunc.addScaledImage(Welcome.this, ((TextView)findViewById(R.id.welcom_fat_delta)),
-                    Emotions.getSmileyResource(Emotions.HAPPY), 0, 0, 0);
+                    0, 0, Emotions.getSmileyResource(Emotions.HAPPY), 0);
         }
         if (paramsEntity.getMuscle() > 1) {
             GlobalFunc.addScaledImage(Welcome.this, ((TextView) findViewById(R.id.welcom_musculs_delta)),
-                    Emotions.getSmileyResource(Emotions.VERY_VERY_HAPPY), 0, 0, 0);
+                    0, 0, Emotions.getSmileyResource(Emotions.VERY_VERY_HAPPY), 0);
         } else if (paramsEntity.getMuscle() > 0.5) {
             GlobalFunc.addScaledImage(Welcome.this, ((TextView) findViewById(R.id.welcom_musculs_delta)),
-                    Emotions.getSmileyResource(Emotions.VERY_HAPPY), 0, 0, 0);
+                    0, 0, Emotions.getSmileyResource(Emotions.VERY_HAPPY), 0);
         } else if (paramsEntity.getMuscle() > 0) {
             GlobalFunc.addScaledImage(Welcome.this, ((TextView) findViewById(R.id.welcom_musculs_delta)),
-                    Emotions.getSmileyResource(Emotions.HAPPY), 0, 0, 0);
+                    0, 0, Emotions.getSmileyResource(Emotions.HAPPY), 0);
         } else if (paramsEntity.getMuscle() == 0) {
             GlobalFunc.addScaledImage(Welcome.this, ((TextView) findViewById(R.id.welcom_musculs_delta)),
-                    Emotions.getSmileyResource(Emotions.NORMAL), 0, 0, 0);
+                    0, 0, Emotions.getSmileyResource(Emotions.NORMAL), 0);
         } else if (paramsEntity.getMuscle() < 0) {
             GlobalFunc.addScaledImage(Welcome.this, ((TextView)findViewById(R.id.welcom_musculs_delta)),
-                    Emotions.getSmileyResource(Emotions.SAD), 0, 0, 0);
+                    0, 0, Emotions.getSmileyResource(Emotions.SAD), 0);
         }
         ((TextView)findViewById(R.id.welcom_tdw_delta)).setText(String.format("%s", paramsEntity.getTdw()));
         ((TextView) findViewById(R.id.welcom_musculs_delta)).setText(String.format("%s", paramsEntity.getMuscle()));

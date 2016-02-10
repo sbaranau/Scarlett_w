@@ -321,6 +321,9 @@ public class DataBaseHelper extends SQLiteOpenHelper {
     public List<Integer> getEmptyDates(long id) {
         int firstDate = getFirstDate(id);
         List<Integer> dates = new ArrayList<>();
+        if (firstDate == 0) {
+            return dates;
+        }
         Calendar cal = Calendar.getInstance();
         int day = firstDate%100;
         int month = (firstDate/100)%100;
@@ -407,7 +410,7 @@ public class DataBaseHelper extends SQLiteOpenHelper {
             SQLiteDatabase db = this.getReadableDatabase();
             Cursor params = db.rawQuery("select * from " + PARAMS_TABLE_NAME + " where "
                     + PARAMS_COLUMN_USEID + " = " + id + " and "+ PARAMS_COLUMN_DATE + "="
-                    + date + " order by " + PARAMS_COLUMN_DATE + " DESC", null);
+                    + date, null);
             if (params.getCount() > 0) {
                 params.moveToFirst();
                 if (!params.isAfterLast()) {

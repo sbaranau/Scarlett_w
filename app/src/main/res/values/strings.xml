@@ -10,4 +10,5 @@
     <string name="select_user">Select user</string>
     <string name="welcom">Welcome!!!</string>
     <string name="congratulations">Congratulations!!!!</string>
+    <string name="title_activity_users">users</string>
 </resources>
