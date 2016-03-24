@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 
@@ -254,23 +255,30 @@ public class DataBaseHelper extends SQLiteOpenHelper {
         }
     }
 
-    public HashMap<Integer, String> getUsersNames() {
-        HashMap<Integer, String> user = new HashMap<>();
+    public ArrayList<UserEntity> getUsersNames() {
+        ArrayList<UserEntity> userList = new ArrayList<>();
         try {
             SQLiteDatabase db = this.getReadableDatabase();
-            Cursor c = db.rawQuery("select " + USER_COLUMN_ID + "," + USER_COLUMN_NAME + " from " + USER_TABLE_NAME, null);
+            Cursor c = db.rawQuery("select " + USER_COLUMN_ID + ","
+                    + USER_COLUMN_NAME + ","
+                    + USER_COLUMN_GENDER
+                    + " from " + USER_TABLE_NAME, null);
             if (c.getCount() > 0) {
                 c.moveToFirst();
+                UserEntity user = new UserEntity();
                 while (!c.isAfterLast()) {
-                    user.put(c.getInt(0), c.getString(1));
+                    user.setId(c.getInt(0));
+                    user.setName(c.getString(1));
+                    user.setGender(c.getInt(2));
                     c.moveToNext();
+                    userList.add(user);
                 }
                 c.close();
             }
         } catch (Exception ex) {
-            return user;
+            return userList;
         }
-        return user;
+        return userList;
     }
 
     public long addUser(UserEntity user) {
@@ -485,5 +493,14 @@ public class DataBaseHelper extends SQLiteOpenHelper {
         return result >= 1;
     }
 
+    public boolean deleteUser(UserEntity user) {
+        try {
+            SQLiteDatabase db = this.getReadableDatabase();
+            return db.delete(USER_TABLE_NAME, USER_COLUMN_ID + "=?" , new String[]{String.valueOf(user.getId())}) > 0;
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        return true;
+    }
 }
 

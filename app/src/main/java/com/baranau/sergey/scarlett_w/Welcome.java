@@ -2,6 +2,7 @@ package com.baranau.sergey.scarlett_w;
 
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
@@ -39,6 +40,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.TimeZone;
 
@@ -68,14 +70,14 @@ public class Welcome extends AppCompatActivity
         setSupportActionBar(toolbar);
         dataBaseHelper = DataBaseHelper.getDataBaseHelper(Welcome.this);
 
-        dataBaseHelper.addTestParams(2);
+    //    dataBaseHelper.deleteAll();
 
-        final HashMap<Integer, String> user = dataBaseHelper.getUsersNames();
+        final ArrayList<UserEntity> userList = dataBaseHelper.getUsersNames();
         SimpleDateFormat df = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
         String currentDateTimeString = df.format(new Date());
         ((TextView)findViewById(R.id.welcom_date)).setText(String.format("Today: %s", currentDateTimeString));
         final AlertDialog.Builder builder = new AlertDialog.Builder(Welcome.this);
-        if (user == null || user.isEmpty() || user.size() == 0) {
+        if (userList == null || userList.isEmpty() || userList.size() == 0) {
             builder.setTitle(R.string.welcom);
             builder.setMessage("Need to register");
             builder.setPositiveButton("Registration", new DialogInterface.OnClickListener() {
@@ -84,26 +86,21 @@ public class Welcome extends AppCompatActivity
                 }
             });
 
-        } else if (user.size() >= 2) {
+        } else if (userList.size() >= 2) {
             builder.setTitle(R.string.select_user);
-            final String[] names = new String[user.size()];
+            final String[] names = new String[userList.size()];
             int i = 0;
-            for (int key : user.keySet()) {
-                names[i] = user.get(key);
+            for (UserEntity user : userList) {
+                names[i] = user.getName();
                 i++;
             }
             builder.setItems(names, new DialogInterface.OnClickListener() {
                 public void onClick(DialogInterface dialog, int which) {
                     GlobalVars.getInstance().setName(names[which]);
-                    for (int key : user.keySet()) {
-                        if (user.get(key).equals(names[which])) {
-                            GlobalVars.getInstance().setId(key);
-                            dialog.cancel();
-                            updateTitleInfo(true);
-                            updateParameters();
-                            break;
-                        }
-                    }
+                    GlobalVars.getInstance().setId(userList.get(which).getId());
+                    dialog.cancel();
+                    updateTitleInfo(true);
+                    updateParameters();
                 }
             });
             builder.setPositiveButton("New User", new DialogInterface.OnClickListener() {
@@ -114,11 +111,9 @@ public class Welcome extends AppCompatActivity
             });
         } else {
             builder.setTitle(R.string.welcom);
-            Object[] keys = user.keySet().toArray();
-            int key = (int) keys[0];
-            builder.setMessage("Hello " + user.get(key));
-            GlobalVars.getInstance().setId(key);
-            GlobalVars.getInstance().setName(user.get(key));
+            builder.setMessage("Hello " + userList.get(0).getName());
+            GlobalVars.getInstance().setId(userList.get(0).getId());
+            GlobalVars.getInstance().setName(userList.get(0).getName());
             builder.setPositiveButton("Yes, It's me", new DialogInterface.OnClickListener() {
                 public void onClick(DialogInterface dialog, int id) {
                     dataBaseHelper.deleteAllParams();
@@ -225,11 +220,46 @@ public class Welcome extends AppCompatActivity
             UserEntity user = dataBaseHelper.getUser(GlobalVars.getInstance().getId());
             showUserDialog(user);
         } else if (id == R.id.users) {
-
+            startActivity(new Intent(Welcome.this, users.class));
         } else if (id == R.id.statistic) {
 
-        } else if (id == R.id.tools) {
+        } else if (id == R.id.change_user) {
+            final ArrayList<UserEntity> userList = dataBaseHelper.getUsersNames();
+            AlertDialog.Builder builder = new AlertDialog.Builder(Welcome.this);
+            builder.setTitle(R.string.select_user);
+            if (userList == null || userList.isEmpty() || userList.size() == 0) {
+                builder.setTitle(R.string.welcom);
+                builder.setMessage("Need to register");
+                builder.setPositiveButton("Registration", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        showUserDialog(null);
+                    }
+                });
 
+            } else {
+                final String[] names = new String[userList.size()];
+                int i = 0;
+                for (UserEntity user : userList) {
+                    names[i] = user.getName();
+                    i++;
+                }
+                builder.setItems(names, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        GlobalVars.getInstance().setName(names[which]);
+                        GlobalVars.getInstance().setId(userList.get(which).getId());
+                        dialog.cancel();
+                        updateTitleInfo(true);
+                        updateParameters();
+                    }
+                });
+                builder.setPositiveButton("New User", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        showUserDialog(null);
+                        dialog.cancel();
+                    }
+                });
+            }
+            builder.create().show();
         }
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
@@ -260,7 +290,7 @@ public class Welcome extends AppCompatActivity
         showCurrentDate.setText("Params for today");
         setDateCheckBox.setChecked(false);
 
-        datePicker.setVisibility(View.INVISIBLE);
+        datePicker.setVisibility(View.GONE);
         if (paramsEntity == null || paramsEntity.getWeight() == 0) {
             paramsEntity = new ParamsEntity();
             paramsEntity.setDate(todaySql);
@@ -308,12 +338,12 @@ public class Welcome extends AppCompatActivity
             @Override
             public void onClick(View v) {
                 if (kg.getText().length() > 0
-                        || bmi.getText().length() > 0
-                        || tdw.getText().length() > 0
-                        || bones.getText().length() > 0
-                        || muscle.getText().length() > 0
-                        || fat.getText().length() > 0
-                        || kcal.getText().length() > 0) {
+                        || (bmi.getText().length() > 0 && !bmi.getText().toString().equals("0.0"))
+                        || (tdw.getText().length() > 0 && !tdw.getText().toString().equals("0.0"))
+                        || (bones.getText().length() > 0 && !bones.getText().toString().equals("0.0"))
+                        || (muscle.getText().length() > 0 && !muscle.getText().toString().equals("0.0"))
+                        || (fat.getText().length() > 0 && !fat.getText().toString().equals("0.0"))
+                        || (kcal.getText().length() > 0 && !kcal.getText().toString().equals("0.0"))) {
                     try {
                         AlertDialog.Builder confirmDialog = new AlertDialog.Builder(Welcome.this);
                         confirmDialog.setCancelable(false);
@@ -328,13 +358,13 @@ public class Welcome extends AppCompatActivity
                         alertDialog1.getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener(new View.OnClickListener() {
                             @Override
                             public void onClick(View v) {
-                                kg.setText("");
-                                fat.setText("");
-                                tdw.setText("");
-                                muscle.setText("");
-                                bones.setText("");
-                                kcal.setText("");
-                                bmi.setText("");
+                                kg.setText("0.0");
+                                fat.setText("0.0");
+                                tdw.setText("0.0");
+                                muscle.setText("0.0");
+                                bones.setText("0.0");
+                                kcal.setText("0.0");
+                                bmi.setText("0.0");
                                 if (dateIndex[0] != dates.size() - 1) {
                                     dateIndex[0]++;
                                     prevButton.setEnabled(true);
@@ -365,13 +395,13 @@ public class Welcome extends AppCompatActivity
         prevButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (kg.getText().length() > 0
-                        || bmi.getText().length() > 0
-                        || tdw.getText().length() > 0
-                        || bones.getText().length() > 0
-                        || muscle.getText().length() > 0
-                        || fat.getText().length() > 0
-                        || kcal.getText().length() > 0) {
+                if ((kg.getText().length() > 0
+                        || (bmi.getText().length() > 0 && !bmi.getText().toString().equals("0.0"))
+                        || (tdw.getText().length() > 0 && !tdw.getText().toString().equals("0.0"))
+                        || (bones.getText().length() > 0 && !bones.getText().toString().equals("0.0"))
+                        || (muscle.getText().length() > 0 && !muscle.getText().toString().equals("0.0"))
+                        || (fat.getText().length() > 0 && !fat.getText().toString().equals("0.0"))
+                        || (kcal.getText().length() > 0 && !kcal.getText().toString().equals("0.0")))) {
                     AlertDialog.Builder confirmDialog = new AlertDialog.Builder(Welcome.this);
                     confirmDialog.setTitle("Warning!!!");
                     confirmDialog.setMessage("If You change date You will lost all unsaved parameters" +
@@ -384,13 +414,13 @@ public class Welcome extends AppCompatActivity
                     alertDialog1.getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
-                            kg.setText("");
-                            fat.setText("");
-                            tdw.setText("");
-                            muscle.setText("");
-                            bones.setText("");
-                            kcal.setText("");
-                            bmi.setText("");
+                            kg.setText("0.0");
+                            fat.setText("0.0");
+                            tdw.setText("0.0");
+                            muscle.setText("0.0");
+                            bones.setText("0.0");
+                            kcal.setText("0.0");
+                            bmi.setText("0.0");
                             if (dateIndex[0] != 0) {
                                 nextButton.setEnabled(true);
                                 dateIndex[0]--;
@@ -736,6 +766,7 @@ public class Welcome extends AppCompatActivity
                                 }
                                 GlobalVars.getInstance().setName(userName.getText().toString().trim());
                                 updateTitleInfo(false);
+                                updateParameters();
                             }
                         }
                     });
@@ -812,6 +843,12 @@ public class Welcome extends AppCompatActivity
             findViewById(R.id.welcom_values_title).setVisibility(View.VISIBLE);
             findViewById(R.id.welcom_use_last_enter).setVisibility(View.INVISIBLE);
             setPreviousParameters(previousParamsEntity);
+        }  else if (todayParamsEntity.getDate() > 0) {
+            findViewById(R.id.welcom_delta).setVisibility(View.INVISIBLE);
+            findViewById(R.id.welcom_new_date).setVisibility(View.INVISIBLE);
+            findViewById(R.id.welcom_values_title).setVisibility(View.VISIBLE);
+            findViewById(R.id.welcom_use_last_enter).setVisibility(View.INVISIBLE);
+            setPreviousParameters(todayParamsEntity);
         } else {
 
             SpannableStringBuilder builder = new SpannableStringBuilder();
@@ -827,21 +864,37 @@ public class Welcome extends AppCompatActivity
             }
 
             findViewById(R.id.welcom_values_title).setVisibility(View.INVISIBLE);
-            findViewById(R.id.welcom_prev_date).setVisibility(View.INVISIBLE);
+           /* findViewById(R.id.welcom_prev_date).setVisibility(View.INVISIBLE);
             findViewById(R.id.textView21).setVisibility(View.INVISIBLE);
             findViewById(R.id.textView22).setVisibility(View.INVISIBLE);
             findViewById(R.id.textView23).setVisibility(View.INVISIBLE);
             findViewById(R.id.textView24).setVisibility(View.INVISIBLE);
             findViewById(R.id.textView25).setVisibility(View.INVISIBLE);
             findViewById(R.id.textView26).setVisibility(View.INVISIBLE);
-            findViewById(R.id.textView27).setVisibility(View.INVISIBLE);
+            findViewById(R.id.textView27).setVisibility(View.INVISIBLE);*/
 
             findViewById(R.id.welcom_delta).setVisibility(View.INVISIBLE);
             findViewById(R.id.welcom_new_date).setVisibility(View.INVISIBLE);
+            findViewById(R.id.welcom_prev_date).setVisibility(View.INVISIBLE);
             findViewById(R.id.welcom_delta).setVisibility(View.INVISIBLE);
             (findViewById(R.id.welcom_use_last_enter)).setVisibility(View.VISIBLE);
             ((TextView)findViewById(R.id.welcom_use_last_enter)).setText(builder);
 
+            findViewById(R.id.welcom_bmi_new).setVisibility(View.INVISIBLE);
+            findViewById(R.id.welcom_bones_new).setVisibility(View.INVISIBLE);
+            findViewById(R.id.welcom_fat_new).setVisibility(View.INVISIBLE);
+            findViewById(R.id.welcom_kcal_new).setVisibility(View.INVISIBLE);
+            findViewById(R.id.welcom_kg_new).setVisibility(View.INVISIBLE);
+            findViewById(R.id.welcom_musculs_new).setVisibility(View.INVISIBLE);
+            findViewById(R.id.welcom_tdw_new).setVisibility(View.INVISIBLE);
+
+            findViewById(R.id.welcom_bmi_last).setVisibility(View.INVISIBLE);
+            findViewById(R.id.welcom_bones_last).setVisibility(View.INVISIBLE);
+            findViewById(R.id.welcom_fat_last).setVisibility(View.INVISIBLE);
+            findViewById(R.id.welcom_kcal_last).setVisibility(View.INVISIBLE);
+            findViewById(R.id.welcom_kg_last).setVisibility(View.INVISIBLE);
+            findViewById(R.id.welcom_musculs_last).setVisibility(View.INVISIBLE);
+            findViewById(R.id.welcom_tdw_last).setVisibility(View.INVISIBLE);
         }
 
     }
@@ -861,6 +914,10 @@ public class Welcome extends AppCompatActivity
 
     private void setPreviousParameters(ParamsEntity paramsEntity) {
         String lastDate = (GlobalFunc.dateIntToString(paramsEntity.getDate()));
+        if (lastDate.length() == 0) {
+            lastDate = GlobalFunc.dateIntToString(todaySql);
+        }
+        findViewById(R.id.welcom_prev_date).setVisibility(View.VISIBLE);
         ((TextView)findViewById(R.id.welcom_prev_date)).setText(lastDate);
         ((TextView)findViewById(R.id.welcom_kg_last)).setText(String.format("%s", paramsEntity.getWeight()));
         ((TextView)findViewById(R.id.welcom_fat_last)).setText(String.format("%s", paramsEntity.getFat()));

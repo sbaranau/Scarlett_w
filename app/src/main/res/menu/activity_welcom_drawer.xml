@@ -10,11 +10,15 @@
             android:id="@+id/statistic"
             android:title="Show statistic" />
         <item
-            android:id="@+id/users"
-            android:title="Users" />
-        <item
             android:id="@+id/tools"
             android:title="Tools" />
+        <item
+            android:id="@+id/users"
+            android:title="Managed Users" />
+
+        <item
+            android:id="@+id/change_user"
+            android:title="Change User" />
     </group>
 <!--
     <item android:title="Communicate">

@@ -12,4 +12,5 @@
     <color name="lite_blue">#40fcff</color>
     <color name="liter_blue">#409cff</color>
     <color name="blue">#4043ff</color>
+    <color name="black">#000</color>
 </resources>

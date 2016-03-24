@@ -37,7 +37,7 @@
         android:layout_below="@+id/welcom_user_hello"
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true"
-        android:textSize="18sp" />
+        android:textSize="16sp" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -47,7 +47,7 @@
         android:layout_below="@+id/welcom_gender"
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true"
-        android:textSize="18sp" />
+        android:textSize="16sp" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -66,14 +66,14 @@
         android:layout_below="@+id/welcom_height"
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true"
-        android:textSize="18sp" />
+        android:textSize="16sp" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Last weighting"
         android:id="@+id/welcom_use_last_enter"
-        android:textSize="18sp"
+        android:textSize="16sp"
         android:layout_below="@+id/welcom_age"
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true" />
@@ -83,11 +83,13 @@
         android:layout_height="wrap_content"
         android:text="Parameters:"
         android:id="@+id/welcom_values_title"
-        android:layout_below="@+id/welcom_use_last_enter"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"
-        android:textSize="18dp"
-        android:textStyle="bold" />
+        android:textSize="11dp"
+        android:textStyle="bold"
+        android:layout_alignTop="@+id/welcom_prev_date"
+        android:layout_alignBottom="@+id/welcom_prev_date"
+        android:gravity="center"
+        android:layout_alignLeft="@+id/textView21"
+        android:layout_alignRight="@+id/textView21" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -360,11 +362,10 @@
         android:layout_alignTop="@+id/welcom_bmi_new"
         android:gravity="center|right"
         android:textSize="16sp"
-        android:layout_alignRight="@+id/welcom_kcal_delta"
-        android:layout_alignEnd="@+id/welcom_kcal_delta"
-        android:layout_toRightOf="@+id/welcom_bmi_new"
-        android:layout_toEndOf="@+id/welcom_bmi_new"
-        android:textColor="@android:color/black" />
+        android:layout_alignRight="@+id/welcom_kg_delta"
+        android:textColor="@android:color/black"
+        android:layout_alignLeft="@+id/welcom_kg_delta"
+        android:paddingRight="20dp" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -376,7 +377,8 @@
         android:layout_alignParentLeft="true"
         android:layout_alignTop="@+id/welcom_kg_last"
         android:gravity="center|start"
-        android:layout_below="@+id/welcom_prev_date" />
+        android:layout_below="@+id/welcom_prev_date"
+        android:textColor="@android:color/black" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -389,7 +391,8 @@
         android:layout_alignEnd="@+id/textView21"
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true"
-        android:gravity="center|start" />
+        android:gravity="center|start"
+        android:textColor="@android:color/black" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -402,7 +405,8 @@
         android:layout_below="@+id/textView22"
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true"
-        android:gravity="center|start" />
+        android:gravity="center|start"
+        android:textColor="@android:color/black" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -415,7 +419,8 @@
         android:layout_below="@+id/welcom_tdw_last"
         android:gravity="center|start"
         android:layout_alignRight="@+id/textView23"
-        android:layout_alignEnd="@+id/textView23" />
+        android:layout_alignEnd="@+id/textView23"
+        android:textColor="@android:color/black" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -428,7 +433,8 @@
         android:layout_alignParentStart="true"
         android:layout_alignRight="@+id/textView24"
         android:layout_alignEnd="@+id/textView24"
-        android:gravity="center|start" />
+        android:gravity="center|start"
+        android:textColor="@android:color/black" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -441,7 +447,8 @@
         android:layout_toStartOf="@+id/welcom_bones_last"
         android:layout_above="@+id/welcom_bmi_last"
         android:layout_below="@+id/textView25"
-        android:gravity="center|start" />
+        android:gravity="center|start"
+        android:textColor="@android:color/black" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -454,33 +461,34 @@
         android:layout_alignBottom="@+id/welcom_bmi_last"
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true"
-        android:gravity="center|start" />
+        android:gravity="center|start"
+        android:textColor="@android:color/black" />
 
     <TextView
-        android:layout_width="70dp"
+        android:layout_width="80dp"
         android:layout_height="wrap_content"
         android:id="@+id/welcom_prev_date"
-        android:layout_centerHorizontal="true"
-        android:layout_below="@+id/welcom_values_title"
+        android:layout_below="@+id/welcom_use_last_enter"
         android:text="prev"
         android:gravity="center"
         android:layout_toRightOf="@+id/textView21"
-        android:layout_marginLeft="5dp" />
+        android:layout_marginLeft="5dp"
+        android:visibility="invisible" />
 
     <TextView
-        android:layout_width="70dp"
+        android:layout_width="80dp"
         android:layout_height="wrap_content"
         android:id="@+id/welcom_new_date"
         android:layout_alignTop="@+id/welcom_prev_date"
         android:layout_toRightOf="@+id/welcom_prev_date"
         android:layout_alignBottom="@+id/welcom_prev_date"
-        android:layout_below="@+id/welcom_values_title"
         android:text="last"
         android:gravity="center"
-        android:layout_marginLeft="5dp" />
+        android:layout_marginLeft="5dp"
+        android:visibility="invisible" />
 
     <TextView
-        android:layout_width="70dp"
+        android:layout_width="80dp"
         android:layout_height="wrap_content"
         android:text="Delta"
         android:id="@+id/welcom_delta"
@@ -489,7 +497,8 @@
         android:layout_toEndOf="@+id/welcom_new_date"
         android:layout_alignBottom="@+id/welcom_new_date"
         android:gravity="center"
-        android:layout_marginLeft="5dp" />
+        android:layout_marginLeft="5dp"
+        android:visibility="invisible" />
 
     <ImageView
         android:layout_width="15dp"
@@ -596,7 +605,8 @@
         android:layout_alignParentStart="true"
         android:layout_alignRight="@+id/textView28"
         android:layout_alignEnd="@+id/textView28"
-        android:gravity="center" />
+        android:gravity="center"
+        android:textColor="@android:color/black" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -607,7 +617,8 @@
         android:layout_alignTop="@+id/textView33"
         android:layout_alignBottom="@+id/textView33"
         android:layout_toLeftOf="@+id/welcom_bmi_delta"
-        android:layout_toRightOf="@+id/textView32" />
+        android:layout_toRightOf="@+id/textView32"
+        android:textColor="@android:color/black" />
 
     <ImageView
         android:layout_width="15dp"
